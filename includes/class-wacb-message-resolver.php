@@ -93,7 +93,7 @@ class WACB_Message_Resolver {
 	 *
 	 * @return string
 	 */
-	private function get_current_url() {
+	public function get_current_url() {
 		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/';
 
 		if ( ! is_string( $request_uri ) || '' === $request_uri ) {

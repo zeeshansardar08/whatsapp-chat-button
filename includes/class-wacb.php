@@ -126,6 +126,8 @@ class WACB {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		$this->loader->add_action( 'wp_footer', $plugin_public, 'render_button' );
+		$this->loader->add_action( 'wp_ajax_wacb_track_click', $plugin_public, 'handle_track_click' );
+		$this->loader->add_action( 'wp_ajax_nopriv_wacb_track_click', $plugin_public, 'handle_track_click' );
 	}
 
 	/**

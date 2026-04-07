@@ -37,6 +37,7 @@ if ( $button_data['delay'] > 0 ) {
 		rel="noopener noreferrer"
 		aria-label="<?php echo esc_attr( $button_data['aria_label'] ); ?>"
 		data-wacb-track="<?php echo esc_attr( $button_data['tracking_data_label'] ); ?>"
+		data-wacb-page-url="<?php echo esc_attr( $button_data['page_url'] ); ?>"
 		style="<?php echo esc_attr( $button_styles ); ?>"
 	>
 		<span class="wacb-chat-button__text"><?php echo esc_html( $button_data['button_text'] ); ?></span>

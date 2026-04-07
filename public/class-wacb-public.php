@@ -73,6 +73,31 @@ class WACB_Public {
 	 * @return void
 	 */
 	public function enqueue_scripts() {
+		$button_data = $this->get_button_data();
+
+		if ( false === $button_data ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'wacb-public',
+			WACB_PLUGIN_URL . 'assets/js/wacb-public.js',
+			array(),
+			$this->version,
+			true
+		);
+
+		wp_add_inline_script(
+			'wacb-public',
+			'window.wacbPublic = ' . wp_json_encode(
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'action'  => 'wacb_track_click',
+					'nonce'   => wp_create_nonce( 'wacb_track_click' ),
+				)
+			) . ';',
+			'before'
+		);
 	}
 
 	/**
@@ -92,6 +117,36 @@ class WACB_Public {
 		if ( is_readable( $view_path ) ) {
 			require $view_path;
 		}
+	}
+
+	/**
+	 * Handles a tracked click request.
+	 *
+	 * @return void
+	 */
+	public function handle_track_click() {
+		if ( ! check_ajax_referer( 'wacb_track_click', 'nonce', false ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Invalid tracking request.', 'whatsapp-chat-button' ),
+				),
+				403
+			);
+		}
+
+		$page_url = isset( $_POST['page_url'] ) ? wp_unslash( $_POST['page_url'] ) : '';
+		$inserted = WACB_Tracking_Engine::insert_click( $page_url, WACB_Tracking_Engine::detect_device() );
+
+		if ( ! $inserted ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Unable to store the click event.', 'whatsapp-chat-button' ),
+				),
+				500
+			);
+		}
+
+		wp_send_json_success();
 	}
 
 	/**
@@ -159,6 +214,7 @@ class WACB_Public {
 			'background_color'    => $background,
 			'text_color'          => $this->get_contrast_text_color( $background ),
 			'delay'               => $delay,
+			'page_url'            => $message_resolver->get_current_url(),
 			'tracking_data_label' => 'chat-button',
 		);
 

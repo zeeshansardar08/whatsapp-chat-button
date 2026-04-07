@@ -36,9 +36,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<?php if ( 'analytics' === $active_tab ) : ?>
 		<div class="card">
-			<h2><?php echo esc_html__( 'Analytics Foundation', 'whatsapp-chat-button' ); ?></h2>
+			<h2><?php echo esc_html__( 'Analytics', 'whatsapp-chat-button' ); ?></h2>
 			<p>
-				<?php echo esc_html__( 'This screen is connected to the tracking engine foundation. Advanced reports, filters, and visualizations are intentionally deferred to a later phase.', 'whatsapp-chat-button' ); ?>
+				<?php echo esc_html__( 'This screen shows lightweight click analytics collected when visitors use the WhatsApp button. The plugin stores only page URL, click time, and a simple device label.', 'whatsapp-chat-button' ); ?>
 			</p>
 			<table class="widefat striped">
 				<tbody>
@@ -54,11 +54,58 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<th scope="row"><?php echo esc_html__( 'Total recorded clicks', 'whatsapp-chat-button' ); ?></th>
 						<td><?php echo esc_html( number_format_i18n( $analytics_summary['total_clicks'] ) ); ?></td>
 					</tr>
+					<tr>
+						<th scope="row"><?php echo esc_html__( 'Clicks today', 'whatsapp-chat-button' ); ?></th>
+						<td><?php echo esc_html( number_format_i18n( $analytics_summary['clicks_today'] ) ); ?></td>
+					</tr>
 				</tbody>
 			</table>
-			<p class="description">
-				<?php echo esc_html__( 'Click logging, reporting filters, and page/device breakdowns will be added in a later phase once frontend event collection is in place.', 'whatsapp-chat-button' ); ?>
-			</p>
+
+			<h3><?php echo esc_html__( 'Top Clicked Pages', 'whatsapp-chat-button' ); ?></h3>
+			<?php if ( ! empty( $analytics_summary['top_pages'] ) ) : ?>
+				<table class="widefat striped">
+					<thead>
+						<tr>
+							<th scope="col"><?php echo esc_html__( 'Page URL', 'whatsapp-chat-button' ); ?></th>
+							<th scope="col"><?php echo esc_html__( 'Clicks', 'whatsapp-chat-button' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $analytics_summary['top_pages'] as $top_page ) : ?>
+							<tr>
+								<td>
+									<a href="<?php echo esc_url( $top_page['page_url'] ); ?>" target="_blank" rel="noopener noreferrer">
+										<?php echo esc_html( $top_page['page_url'] ); ?>
+									</a>
+								</td>
+								<td><?php echo esc_html( number_format_i18n( $top_page['click_count'] ) ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php else : ?>
+				<p><?php echo esc_html__( 'No click data has been recorded yet.', 'whatsapp-chat-button' ); ?></p>
+			<?php endif; ?>
+
+			<h3><?php echo esc_html__( 'Device Breakdown', 'whatsapp-chat-button' ); ?></h3>
+			<table class="widefat striped">
+				<thead>
+					<tr>
+						<th scope="col"><?php echo esc_html__( 'Device', 'whatsapp-chat-button' ); ?></th>
+						<th scope="col"><?php echo esc_html__( 'Clicks', 'whatsapp-chat-button' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><?php echo esc_html__( 'Mobile', 'whatsapp-chat-button' ); ?></td>
+						<td><?php echo esc_html( number_format_i18n( $analytics_summary['device_breakdown']['mobile'] ) ); ?></td>
+					</tr>
+					<tr>
+						<td><?php echo esc_html__( 'Desktop', 'whatsapp-chat-button' ); ?></td>
+						<td><?php echo esc_html( number_format_i18n( $analytics_summary['device_breakdown']['desktop'] ) ); ?></td>
+					</tr>
+				</tbody>
+			</table>
 		</div>
 	<?php else : ?>
 		<?php settings_errors( WACB_Settings_Manager::get_option_name() ); ?>
