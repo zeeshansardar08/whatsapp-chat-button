@@ -1,0 +1,88 @@
+.wacb-chat-button-wrap {
+	position: fixed;
+	z-index: 9999;
+	bottom: 16px;
+	max-width: calc(100vw - 32px);
+}
+
+.wacb-chat-button-wrap--left {
+	left: 16px;
+}
+
+.wacb-chat-button-wrap--right {
+	right: 16px;
+}
+
+.wacb-chat-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 48px;
+	padding: 12px 18px;
+	border-radius: 999px;
+	background: var(--wacb-button-background, #25d366);
+	color: var(--wacb-button-text-color, #ffffff);
+	text-decoration: none;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.2;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wacb-chat-button:hover,
+.wacb-chat-button:focus-visible {
+	transform: translateY(-1px);
+	box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
+.wacb-chat-button:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+.wacb-chat-button--delayed {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	animation: wacb-reveal 0.01s linear forwards;
+	animation-delay: var(--wacb-delay, 0s);
+}
+
+.wacb-chat-button__text {
+	word-break: break-word;
+}
+
+@keyframes wacb-reveal {
+	to {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wacb-chat-button {
+		transition: none;
+	}
+}
+
+@media (max-width: 600px) {
+	.wacb-chat-button-wrap {
+		right: 12px;
+		left: 12px;
+		bottom: 12px;
+		max-width: none;
+	}
+
+	.wacb-chat-button-wrap--left,
+	.wacb-chat-button-wrap--right {
+		right: 12px;
+		left: 12px;
+	}
+
+	.wacb-chat-button {
+		width: 100%;
+		padding: 14px 18px;
+	}
+}
