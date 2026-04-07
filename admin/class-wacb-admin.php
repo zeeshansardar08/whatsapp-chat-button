@@ -550,6 +550,9 @@ class WACB_Admin {
 			'table_name'         => $table_name,
 			'table_exists_label' => $table_exists_label,
 			'total_clicks'       => WACB_Tracking_Engine::get_total_clicks(),
+			'clicks_today'       => WACB_Tracking_Engine::get_clicks_today(),
+			'top_pages'          => WACB_Tracking_Engine::get_top_pages( 5 ),
+			'device_breakdown'   => WACB_Tracking_Engine::get_device_breakdown(),
 		);
 	}
 }
