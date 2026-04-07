@@ -1,0 +1,73 @@
+<?php
+/**
+ * Tracking foundation and table helpers.
+ *
+ * @package WhatsApp_Chat_Button
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Tracking engine.
+ */
+class WACB_Tracking_Engine {
+
+	/**
+	 * Clicks table suffix.
+	 *
+	 * @var string
+	 */
+	const TABLE_SUFFIX = 'wacb_clicks';
+
+	/**
+	 * Returns the full table name.
+	 *
+	 * @param wpdb|null $wpdb_instance WordPress database object.
+	 * @return string
+	 */
+	public static function get_table_name( $wpdb_instance = null ) {
+		global $wpdb;
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			$wpdb_instance = $wpdb;
+		}
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			return '';
+		}
+
+		return $wpdb_instance->prefix . self::TABLE_SUFFIX;
+	}
+
+	/**
+	 * Returns the SQL schema for the clicks table.
+	 *
+	 * @param wpdb|null $wpdb_instance WordPress database object.
+	 * @return string
+	 */
+	public static function get_schema( $wpdb_instance = null ) {
+		global $wpdb;
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			$wpdb_instance = $wpdb;
+		}
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			return '';
+		}
+
+		$table_name      = self::get_table_name( $wpdb_instance );
+		$charset_collate = $wpdb_instance->get_charset_collate();
+
+		return "CREATE TABLE {$table_name} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			page_url text NOT NULL,
+			clicked_at datetime NOT NULL,
+			device varchar(20) NOT NULL DEFAULT '',
+			PRIMARY KEY  (id),
+			KEY clicked_at (clicked_at)
+		) {$charset_collate};";
+	}
+}
