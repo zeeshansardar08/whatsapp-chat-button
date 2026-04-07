@@ -87,9 +87,16 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function enqueue_styles( $hook_suffix = '' ) {
-		if ( $this->settings_page_hook_suffix !== $hook_suffix ) {
+		if ( ! $this->is_settings_screen( $hook_suffix ) ) {
 			return;
 		}
+
+		wp_enqueue_style(
+			'wacb-admin',
+			WACB_PLUGIN_URL . 'assets/css/wacb-admin.css',
+			array(),
+			$this->version
+		);
 	}
 
 	/**
@@ -98,9 +105,17 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function enqueue_scripts( $hook_suffix = '' ) {
-		if ( $this->settings_page_hook_suffix !== $hook_suffix ) {
+		if ( ! $this->is_settings_screen( $hook_suffix ) ) {
 			return;
 		}
+
+		wp_enqueue_script(
+			'wacb-admin',
+			WACB_PLUGIN_URL . 'assets/js/wacb-admin.js',
+			array(),
+			$this->version,
+			true
+		);
 	}
 
 	/**
@@ -221,15 +236,15 @@ class WACB_Admin {
 
 		add_settings_section(
 			'wacb_routing_section',
-			__( 'Routing Foundation', 'whatsapp-chat-button' ),
+			__( 'Routing Rules', 'whatsapp-chat-button' ),
 			array( $this, 'render_routing_section' ),
 			self::SETTINGS_PAGE
 		);
 
 		add_settings_field(
-			'wacb_default_route',
-			__( 'Default route', 'whatsapp-chat-button' ),
-			array( $this, 'render_default_route_field' ),
+			'wacb_routing_rules',
+			__( 'Routing rules', 'whatsapp-chat-button' ),
+			array( $this, 'render_routing_rules_field' ),
 			self::SETTINGS_PAGE,
 			'wacb_routing_section'
 		);
@@ -273,7 +288,7 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function render_button_design_section() {
-		echo '<p>' . esc_html__( 'These design settings will be used by the frontend button in a later phase.', 'whatsapp-chat-button' ) . '</p>';
+		echo '<p>' . esc_html__( 'These design settings control the frontend button appearance.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -291,7 +306,7 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function render_routing_section() {
-		echo '<p>' . esc_html__( 'This phase stores a stable default routing structure so page-based and taxonomy-based rules can be added later without changing the option schema.', 'whatsapp-chat-button' ) . '</p>';
+		echo '<p>' . esc_html__( 'Rules are evaluated in this order: page, post, category, then default fallback. The first matching rule wins.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -450,61 +465,119 @@ class WACB_Admin {
 			<li><code>{site_name}</code></li>
 		</ul>
 		<p class="description">
-			<?php echo esc_html__( 'These values are stored as part of the message template in this phase. Replacement logic will be introduced when frontend output is built.', 'whatsapp-chat-button' ); ?>
+			<?php echo esc_html__( 'These values are stored as part of the message template and replaced at runtime on the frontend.', 'whatsapp-chat-button' ); ?>
 		</p>
 		<?php
 	}
 
 	/**
-	 * Renders the default route field.
+	 * Renders routing rules.
 	 *
 	 * @return void
 	 */
-	public function render_default_route_field() {
-		$settings = WACB_Settings_Manager::get_settings();
-		$rule     = $settings['wacb_routing_rules'][0];
+	public function render_routing_rules_field() {
+		$routing_rules     = WACB_Settings_Manager::get_routing_rules();
+		$default_rule      = WACB_Settings_Manager::get_default_routing_rules()[0];
+		$specific_rules    = array();
+		$page_options      = $this->get_page_options();
+		$post_options      = $this->get_post_options();
+		$category_options  = $this->get_category_options();
+		$rule_type_options = WACB_Settings_Manager::get_rule_type_labels();
+		$template_rule     = WACB_Settings_Manager::get_empty_routing_rule();
+		$settings_key      = WACB_Settings_Manager::get_option_name();
+
+		unset( $rule_type_options['default'] );
+
+		foreach ( $routing_rules as $routing_rule ) {
+			if ( 'default' === $routing_rule['rule_type'] ) {
+				$default_rule = $routing_rule;
+				continue;
+			}
+
+			$specific_rules[] = $routing_rule;
+		}
 		?>
-		<input
-			name="<?php echo esc_attr( WACB_Settings_Manager::get_option_name() ); ?>[wacb_routing_rules][0][rule_type]"
-			type="hidden"
-			value="default"
-		/>
-		<input
-			name="<?php echo esc_attr( WACB_Settings_Manager::get_option_name() ); ?>[wacb_routing_rules][0][match_type]"
-			type="hidden"
-			value="sitewide"
-		/>
-		<p>
-			<label for="wacb_default_route_label">
-				<?php echo esc_html__( 'Label', 'whatsapp-chat-button' ); ?>
-			</label>
-			<br />
-			<input
-				name="<?php echo esc_attr( WACB_Settings_Manager::get_option_name() ); ?>[wacb_routing_rules][0][label]"
-				type="text"
-				id="wacb_default_route_label"
-				class="regular-text"
-				value="<?php echo esc_attr( $rule['label'] ); ?>"
-			/>
-		</p>
-		<p>
-			<label for="wacb_default_route_number">
-				<?php echo esc_html__( 'Fallback number override', 'whatsapp-chat-button' ); ?>
-			</label>
-			<br />
-			<input
-				name="<?php echo esc_attr( WACB_Settings_Manager::get_option_name() ); ?>[wacb_routing_rules][0][number]"
-				type="text"
-				id="wacb_default_route_number"
-				class="regular-text"
-				inputmode="numeric"
-				value="<?php echo esc_attr( $rule['number'] ); ?>"
-				placeholder="<?php echo esc_attr__( 'Leave empty to use the primary number', 'whatsapp-chat-button' ); ?>"
-			/>
-		</p>
-		<p class="description">
-			<?php echo esc_html__( 'This stores the first routing rule in a stable array format. More advanced page, post, and taxonomy rules will be added in a later phase.', 'whatsapp-chat-button' ); ?>
-		</p>
+		<div class="wacb-routing-rules" data-wacb-routing-rules data-wacb-next-index="<?php echo esc_attr( (string) count( $specific_rules ) ); ?>">
+			<p class="description">
+				<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. The first match within each rule type wins, and the default fallback is always checked last.', 'whatsapp-chat-button' ); ?>
+			</p>
+
+			<table class="widefat striped wacb-routing-rules-table">
+				<thead>
+					<tr>
+						<th scope="col"><?php echo esc_html__( 'Rule label', 'whatsapp-chat-button' ); ?></th>
+						<th scope="col"><?php echo esc_html__( 'Rule type', 'whatsapp-chat-button' ); ?></th>
+						<th scope="col"><?php echo esc_html__( 'Target', 'whatsapp-chat-button' ); ?></th>
+						<th scope="col"><?php echo esc_html__( 'WhatsApp number', 'whatsapp-chat-button' ); ?></th>
+						<th scope="col"><?php echo esc_html__( 'Action', 'whatsapp-chat-button' ); ?></th>
+					</tr>
+				</thead>
+				<tbody data-wacb-rules-body>
+					<?php foreach ( $specific_rules as $index => $rule ) : ?>
+						<?php
+						$this->render_routing_rule_row(
+							$settings_key . '[wacb_routing_rules][' . (string) $index . ']',
+							$rule,
+							$rule_type_options,
+							$page_options,
+							$post_options,
+							$category_options
+						);
+						?>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+
+			<p>
+				<button type="button" class="button" data-wacb-add-rule>
+					<?php echo esc_html__( 'Add routing rule', 'whatsapp-chat-button' ); ?>
+				</button>
+			</p>
+
+			<div class="wacb-routing-default-rule">
+				<h4><?php echo esc_html__( 'Default fallback', 'whatsapp-chat-button' ); ?></h4>
+				<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][rule_type]" value="default" />
+				<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][target_id]" value="0" />
+				<p>
+					<label for="wacb_default_rule_label"><?php echo esc_html__( 'Label', 'whatsapp-chat-button' ); ?></label>
+					<br />
+					<input
+						type="text"
+						class="regular-text"
+						id="wacb_default_rule_label"
+						name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][label]"
+						value="<?php echo esc_attr( (string) $default_rule['label'] ); ?>"
+					/>
+				</p>
+				<p>
+					<label for="wacb_default_rule_number"><?php echo esc_html__( 'Fallback number override', 'whatsapp-chat-button' ); ?></label>
+					<br />
+					<input
+						type="text"
+						class="regular-text"
+						inputmode="numeric"
+						id="wacb_default_rule_number"
+						name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][number]"
+						value="<?php echo esc_attr( (string) $default_rule['number'] ); ?>"
+						placeholder="<?php echo esc_attr__( 'Leave empty to use the primary number', 'whatsapp-chat-button' ); ?>"
+					/>
+				</p>
+			</div>
+
+			<?php
+			ob_start();
+			$this->render_routing_rule_row(
+				$settings_key . '[wacb_routing_rules][__index__]',
+				$template_rule,
+				$rule_type_options,
+				$page_options,
+				$post_options,
+				$category_options
+			);
+			$template_row_html = ob_get_clean();
+			?>
+			<script type="text/html" data-wacb-rule-template><?php echo $template_row_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
+		</div>
 		<?php
 	}
 
@@ -554,5 +627,123 @@ class WACB_Admin {
 			'top_pages'          => WACB_Tracking_Engine::get_top_pages( 5 ),
 			'device_breakdown'   => WACB_Tracking_Engine::get_device_breakdown(),
 		);
+	}
+
+	/**
+	 * Returns whether the current screen is the plugin settings page.
+	 *
+	 * @param string $hook_suffix Hook suffix.
+	 * @return bool
+	 */
+	private function is_settings_screen( $hook_suffix ) {
+		return '' !== $this->settings_page_hook_suffix && $this->settings_page_hook_suffix === $hook_suffix;
+	}
+
+	/**
+	 * Renders a routing rule row view.
+	 *
+	 * @param string                                 $field_name_prefix Field name prefix.
+	 * @param array<string, int|string>              $rule Rule data.
+	 * @param array<string, string>                  $rule_type_options Rule type options.
+	 * @param array<int, array{id:int,title:string}> $page_options Page options.
+	 * @param array<int, array{id:int,title:string}> $post_options Post options.
+	 * @param array<int, array{id:int,title:string}> $category_options Category options.
+	 * @return void
+	 */
+	private function render_routing_rule_row( $field_name_prefix, $rule, $rule_type_options, $page_options, $post_options, $category_options ) {
+		$view_path = WACB_PLUGIN_DIR . 'admin/views/routing-rule-row.php';
+
+		if ( is_readable( $view_path ) ) {
+			require $view_path;
+		}
+	}
+
+	/**
+	 * Returns published pages for routing.
+	 *
+	 * @return array<int, array{id:int,title:string}>
+	 */
+	private function get_page_options() {
+		$page_options = array();
+		$pages        = get_pages(
+			array(
+				'sort_column' => 'post_title',
+				'sort_order'  => 'ASC',
+			)
+		);
+
+		foreach ( $pages as $page ) {
+			$title = get_the_title( $page );
+
+			if ( '' === $title ) {
+				$title = __( '(no title)', 'whatsapp-chat-button' );
+			}
+
+			$page_options[] = array(
+				'id'    => (int) $page->ID,
+				'title' => $title,
+			);
+		}
+
+		return $page_options;
+	}
+
+	/**
+	 * Returns published posts for routing.
+	 *
+	 * @return array<int, array{id:int,title:string}>
+	 */
+	private function get_post_options() {
+		$post_options = array();
+		$posts        = get_posts(
+			array(
+				'post_type'        => 'post',
+				'post_status'      => 'publish',
+				'numberposts'      => -1,
+				'orderby'          => 'title',
+				'order'            => 'ASC',
+				'suppress_filters' => false,
+			)
+		);
+
+		foreach ( $posts as $post ) {
+			$title = get_the_title( $post );
+
+			if ( '' === $title ) {
+				$title = __( '(no title)', 'whatsapp-chat-button' );
+			}
+
+			$post_options[] = array(
+				'id'    => (int) $post->ID,
+				'title' => $title,
+			);
+		}
+
+		return $post_options;
+	}
+
+	/**
+	 * Returns categories for routing.
+	 *
+	 * @return array<int, array{id:int,title:string}>
+	 */
+	private function get_category_options() {
+		$category_options = array();
+		$categories       = get_categories(
+			array(
+				'hide_empty' => false,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			)
+		);
+
+		foreach ( $categories as $category ) {
+			$category_options[] = array(
+				'id'    => (int) $category->term_id,
+				'title' => $category->name,
+			);
+		}
+
+		return $category_options;
 	}
 }
