@@ -1,0 +1,28 @@
+.wacb-routing-rules-table th,
+.wacb-routing-rules-table td {
+	vertical-align: top;
+}
+
+.wacb-routing-rules-table select,
+.wacb-routing-rules-table input[type="text"] {
+	width: 100%;
+	max-width: 100%;
+}
+
+.wacb-routing-target-wrap {
+	display: none;
+}
+
+.wacb-routing-target-wrap.is-active {
+	display: block;
+}
+
+.wacb-routing-default-rule {
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid #dcdcde;
+}
+
+.wacb-routing-rule-actions {
+	width: 100px;
+}

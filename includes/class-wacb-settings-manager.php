@@ -29,6 +29,13 @@ class WACB_Settings_Manager {
 	const ALLOWED_POSITIONS = array( 'left', 'right' );
 
 	/**
+	 * Supported routing rule types.
+	 *
+	 * @var string[]
+	 */
+	const ALLOWED_RULE_TYPES = array( 'page', 'post', 'category', 'default' );
+
+	/**
 	 * Returns the settings option name.
 	 *
 	 * @return string
@@ -63,11 +70,39 @@ class WACB_Settings_Manager {
 	public static function get_default_routing_rules() {
 		return array(
 			array(
-				'rule_type'  => 'default',
-				'match_type' => 'sitewide',
-				'label'      => 'All pages',
+				'rule_type' => 'default',
+				'target_id' => 0,
+				'label'     => 'Default fallback',
 				'number'     => '',
 			),
+		);
+	}
+
+	/**
+	 * Returns a blank routing rule shape.
+	 *
+	 * @return array<string, int|string>
+	 */
+	public static function get_empty_routing_rule() {
+		return array(
+			'rule_type' => 'page',
+			'target_id' => 0,
+			'label'     => '',
+			'number'    => '',
+		);
+	}
+
+	/**
+	 * Returns the supported routing rule type labels.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function get_rule_type_labels() {
+		return array(
+			'page'     => __( 'Page', 'whatsapp-chat-button' ),
+			'post'     => __( 'Post', 'whatsapp-chat-button' ),
+			'category' => __( 'Category', 'whatsapp-chat-button' ),
+			'default'  => __( 'Default', 'whatsapp-chat-button' ),
 		);
 	}
 
@@ -83,6 +118,17 @@ class WACB_Settings_Manager {
 	}
 
 	/**
+	 * Returns normalized routing rules for downstream use.
+	 *
+	 * @return array<int, array<string, int|string>>
+	 */
+	public static function get_routing_rules() {
+		$settings = self::get_settings();
+
+		return self::normalize_routing_rules( $settings['wacb_routing_rules'] );
+	}
+
+	/**
 	 * Sanitizes incoming settings values.
 	 *
 	 * @param mixed $settings Raw settings from the Settings API.
@@ -90,6 +136,108 @@ class WACB_Settings_Manager {
 	 */
 	public static function sanitize_settings( $settings ) {
 		return self::normalize_settings( $settings );
+	}
+
+	/**
+	 * Returns whether a routing rule type is supported.
+	 *
+	 * @param string $rule_type Rule type.
+	 * @return bool
+	 */
+	public static function is_allowed_rule_type( $rule_type ) {
+		return in_array( $rule_type, self::ALLOWED_RULE_TYPES, true );
+	}
+
+	/**
+	 * Returns a normalized routing rule.
+	 *
+	 * @param mixed $rule Raw routing rule.
+	 * @return array<string, int|string>
+	 */
+	public static function normalize_routing_rule( $rule ) {
+		$defaults = self::get_empty_routing_rule();
+
+		if ( ! is_array( $rule ) ) {
+			$rule = array();
+		}
+
+		$rule_type = isset( $rule['rule_type'] ) ? sanitize_key( (string) $rule['rule_type'] ) : $defaults['rule_type'];
+
+		if ( ! self::is_allowed_rule_type( $rule_type ) ) {
+			$rule_type = $defaults['rule_type'];
+		}
+
+		$target_id = 0;
+
+		if ( 'page' === $rule_type ) {
+			$target_id = absint( $rule['target_id_page'] ?? $rule['target_id'] ?? 0 );
+		} elseif ( 'post' === $rule_type ) {
+			$target_id = absint( $rule['target_id_post'] ?? $rule['target_id'] ?? 0 );
+		} elseif ( 'category' === $rule_type ) {
+			$target_id = absint( $rule['target_id_category'] ?? $rule['target_id'] ?? 0 );
+		}
+
+		$normalized_rule = array(
+			'rule_type' => $rule_type,
+			'target_id' => $target_id,
+			'label'     => sanitize_text_field( (string) ( $rule['label'] ?? '' ) ),
+			'number'    => self::sanitize_whatsapp_number( $rule['number'] ?? '' ),
+		);
+
+		if ( 'default' === $rule_type ) {
+			$normalized_rule['target_id'] = 0;
+		}
+
+		if ( '' === $normalized_rule['label'] ) {
+			$normalized_rule['label'] = self::get_default_rule_label( $normalized_rule['rule_type'] );
+		}
+
+		return $normalized_rule;
+	}
+
+	/**
+	 * Returns the default label for a rule type.
+	 *
+	 * @param string $rule_type Rule type.
+	 * @return string
+	 */
+	public static function get_default_rule_label( $rule_type ) {
+		$labels = self::get_rule_type_labels();
+
+		if ( isset( $labels[ $rule_type ] ) ) {
+			if ( 'default' === $rule_type ) {
+				return __( 'Default fallback', 'whatsapp-chat-button' );
+			}
+
+			return sprintf(
+				/* translators: %s: rule type label. */
+				__( '%s rule', 'whatsapp-chat-button' ),
+				$labels[ $rule_type ]
+			);
+		}
+
+		return __( 'Routing rule', 'whatsapp-chat-button' );
+	}
+
+	/**
+	 * Groups routing rules by type for evaluation.
+	 *
+	 * @param array<int, array<string, int|string>> $routing_rules Routing rules.
+	 * @return array<string, array<int, array<string, int|string>>>
+	 */
+	public static function group_routing_rules_by_type( $routing_rules ) {
+		$grouped_rules = array(
+			'page'     => array(),
+			'post'     => array(),
+			'category' => array(),
+			'default'  => array(),
+		);
+
+		foreach ( self::normalize_routing_rules( $routing_rules ) as $rule ) {
+			$grouped_rules[ $rule['rule_type'] ][] = $rule;
+		}
+
+		return $grouped_rules;
 	}
 
 	/**
@@ -134,30 +282,30 @@ class WACB_Settings_Manager {
 	 * @param mixed $routing_rules Raw routing rules.
 	 * @return array<int, array<string, string>>
 	 */
-	private static function normalize_routing_rules( $routing_rules ) {
-		$default_rules = self::get_default_routing_rules();
-		$default_rule  = $default_rules[0];
+	public static function normalize_routing_rules( $routing_rules ) {
+		$normalized_rules = array();
+		$default_rule     = self::get_default_routing_rules()[0];
 
-		if ( ! is_array( $routing_rules ) || empty( $routing_rules[0] ) || ! is_array( $routing_rules[0] ) ) {
-			return $default_rules;
+		if ( is_array( $routing_rules ) ) {
+			foreach ( $routing_rules as $rule ) {
+				$normalized_rule = self::normalize_routing_rule( $rule );
+
+				if ( 'default' === $normalized_rule['rule_type'] ) {
+					$default_rule = $normalized_rule;
+					continue;
+				}
+
+				if ( empty( $normalized_rule['target_id'] ) || '' === $normalized_rule['number'] ) {
+					continue;
+				}
+
+				$normalized_rules[] = $normalized_rule;
+			}
 		}
 
-		$rule = $routing_rules[0];
+		$normalized_rules[] = $default_rule;
 
-		$label = sanitize_text_field( (string) ( $rule['label'] ?? $default_rule['label'] ) );
-
-		if ( '' === $label ) {
-			$label = $default_rule['label'];
-		}
-
-		return array(
-			array(
-				'rule_type'  => $default_rule['rule_type'],
-				'match_type' => $default_rule['match_type'],
-				'label'      => $label,
-				'number'     => self::sanitize_whatsapp_number( $rule['number'] ?? $default_rule['number'] ),
-			),
-		);
+		return array_values( $normalized_rules );
 	}
 
 	/**
