@@ -58,6 +58,7 @@ class WACB {
 			'includes/class-wacb-loader.php',
 			'includes/class-wacb-i18n.php',
 			'includes/class-wacb-settings-manager.php',
+			'includes/class-wacb-message-resolver.php',
 			'includes/class-wacb-routing-engine.php',
 			'includes/class-wacb-tracking-engine.php',
 			'admin/class-wacb-admin.php',
@@ -124,6 +125,7 @@ class WACB {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'wp_footer', $plugin_public, 'render_button' );
 	}
 
 	/**
