@@ -70,4 +70,66 @@ class WACB_Tracking_Engine {
 			KEY clicked_at (clicked_at)
 		) {$charset_collate};";
 	}
+
+	/**
+	 * Determines whether the tracking table exists.
+	 *
+	 * @param wpdb|null $wpdb_instance WordPress database object.
+	 * @return bool
+	 */
+	public static function table_exists( $wpdb_instance = null ) {
+		global $wpdb;
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			$wpdb_instance = $wpdb;
+		}
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			return false;
+		}
+
+		$table_name = self::get_table_name( $wpdb_instance );
+
+		if ( '' === $table_name ) {
+			return false;
+		}
+
+		$found_table = $wpdb_instance->get_var(
+			$wpdb_instance->prepare(
+				'SHOW TABLES LIKE %s',
+				$table_name
+			)
+		);
+
+		return $table_name === $found_table;
+	}
+
+	/**
+	 * Returns the total number of tracked clicks.
+	 *
+	 * @param wpdb|null $wpdb_instance WordPress database object.
+	 * @return int
+	 */
+	public static function get_total_clicks( $wpdb_instance = null ) {
+		global $wpdb;
+
+		if ( ! $wpdb_instance instanceof wpdb ) {
+			$wpdb_instance = $wpdb;
+		}
+
+		if ( ! $wpdb_instance instanceof wpdb || ! self::table_exists( $wpdb_instance ) ) {
+			return 0;
+		}
+
+		$table_name = self::get_table_name( $wpdb_instance );
+
+		if ( '' === $table_name ) {
+			return 0;
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table identifiers cannot be parameterized with $wpdb->prepare().
+		$total_clicks = $wpdb_instance->get_var( "SELECT COUNT(*) FROM {$table_name}" );
+
+		return absint( $total_clicks );
+	}
 }
