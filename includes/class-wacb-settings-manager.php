@@ -36,6 +36,20 @@ class WACB_Settings_Manager {
 	const ALLOWED_RULE_TYPES = array( 'page', 'post', 'category', 'default' );
 
 	/**
+	 * Form context for the settings page.
+	 *
+	 * @var string
+	 */
+	const FORM_CONTEXT_SETTINGS = 'settings';
+
+	/**
+	 * Form context for the routing rules page.
+	 *
+	 * @var string
+	 */
+	const FORM_CONTEXT_ROUTING = 'routing';
+
+	/**
 	 * Returns the settings option name.
 	 *
 	 * @return string
@@ -129,13 +143,60 @@ class WACB_Settings_Manager {
 	}
 
 	/**
+	 * Returns only the specific routing rules.
+	 *
+	 * @param array<int, array<string, int|string>>|null $routing_rules Optional routing rules array.
+	 * @return array<int, array<string, int|string>>
+	 */
+	public static function get_specific_routing_rules( $routing_rules = null ) {
+		if ( null === $routing_rules ) {
+			$routing_rules = self::get_routing_rules();
+		}
+
+		$specific_rules = array();
+
+		foreach ( self::normalize_routing_rules( $routing_rules ) as $rule ) {
+			if ( 'default' === $rule['rule_type'] ) {
+				continue;
+			}
+
+			$specific_rules[] = $rule;
+		}
+
+		return $specific_rules;
+	}
+
+	/**
+	 * Returns the default fallback routing rule.
+	 *
+	 * @param array<int, array<string, int|string>>|null $routing_rules Optional routing rules array.
+	 * @return array<string, int|string>
+	 */
+	public static function get_default_routing_rule( $routing_rules = null ) {
+		$default_rule = self::get_default_routing_rules()[0];
+
+		if ( null === $routing_rules ) {
+			$routing_rules = self::get_routing_rules();
+		}
+
+		foreach ( self::normalize_routing_rules( $routing_rules ) as $rule ) {
+			if ( 'default' === $rule['rule_type'] ) {
+				$default_rule = $rule;
+				break;
+			}
+		}
+
+		return $default_rule;
+	}
+
+	/**
 	 * Sanitizes incoming settings values.
 	 *
 	 * @param mixed $settings Raw settings from the Settings API.
 	 * @return array<string, mixed>
 	 */
 	public static function sanitize_settings( $settings ) {
-		return self::normalize_settings( $settings );
+		return self::normalize_settings( self::merge_partial_settings( $settings ) );
 	}
 
 	/**
@@ -318,5 +379,105 @@ class WACB_Settings_Manager {
 		$sanitized_number = preg_replace( '/[^0-9]/', '', (string) $number );
 
 		return is_string( $sanitized_number ) ? $sanitized_number : '';
+	}
+
+	/**
+	 * Merges a partial settings submission with the saved option.
+	 *
+	 * @param mixed $settings Raw submitted settings.
+	 * @return array<string, mixed>
+	 */
+	private static function merge_partial_settings( $settings ) {
+		$current_settings = self::get_settings();
+
+		if ( ! is_array( $settings ) ) {
+			return $current_settings;
+		}
+
+		$form_context = isset( $settings['wacb_form_context'] ) ? sanitize_key( (string) $settings['wacb_form_context'] ) : '';
+		$merged       = $current_settings;
+		$setting_keys = array_keys( self::get_defaults() );
+
+		foreach ( $setting_keys as $setting_key ) {
+			if ( 'wacb_routing_rules' === $setting_key ) {
+				continue;
+			}
+
+			if ( array_key_exists( $setting_key, $settings ) ) {
+				$merged[ $setting_key ] = $settings[ $setting_key ];
+			}
+		}
+
+		if ( self::FORM_CONTEXT_SETTINGS === $form_context ) {
+			$merged['wacb_routing_rules'] = self::merge_settings_page_routing_rules(
+				$current_settings['wacb_routing_rules'],
+				$settings['wacb_routing_rules'] ?? array()
+			);
+
+			return $merged;
+		}
+
+		if ( self::FORM_CONTEXT_ROUTING === $form_context ) {
+			$merged['wacb_routing_rules'] = self::merge_routing_page_rules(
+				$current_settings['wacb_routing_rules'],
+				$settings['wacb_routing_rules'] ?? array()
+			);
+
+			return $merged;
+		}
+
+		if ( array_key_exists( 'wacb_routing_rules', $settings ) ) {
+			$merged['wacb_routing_rules'] = $settings['wacb_routing_rules'];
+		}
+
+		return $merged;
+	}
+
+	/**
+	 * Merges the settings page default fallback submission.
+	 *
+	 * @param array<int, array<string, int|string>> $existing_rules Current routing rules.
+	 * @param mixed                                 $submitted_rules Submitted routing rules.
+	 * @return array<int, array<string, int|string>>
+	 */
+	private static function merge_settings_page_routing_rules( $existing_rules, $submitted_rules ) {
+		$specific_rules = self::get_specific_routing_rules( $existing_rules );
+		$default_rule   = self::get_default_routing_rule( $submitted_rules );
+
+		$specific_rules[] = $default_rule;
+
+		return array_values( $specific_rules );
+	}
+
+	/**
+	 * Merges the routing page submission while preserving the default fallback rule.
+	 *
+	 * @param array<int, array<string, int|string>> $existing_rules Current routing rules.
+	 * @param mixed                                 $submitted_rules Submitted routing rules.
+	 * @return array<int, array<string, int|string>>
+	 */
+	private static function merge_routing_page_rules( $existing_rules, $submitted_rules ) {
+		$normalized_rules = array();
+		$default_rule     = self::get_default_routing_rule( $existing_rules );
+
+		if ( is_array( $submitted_rules ) ) {
+			foreach ( $submitted_rules as $rule ) {
+				$normalized_rule = self::normalize_routing_rule( $rule );
+
+				if ( 'default' === $normalized_rule['rule_type'] ) {
+					continue;
+				}
+
+				if ( empty( $normalized_rule['target_id'] ) || '' === $normalized_rule['number'] ) {
+					continue;
+				}
+
+				$normalized_rules[] = $normalized_rule;
+			}
+		}
+
+		$normalized_rules[] = $default_rule;
+
+		return array_values( $normalized_rules );
 	}
 }

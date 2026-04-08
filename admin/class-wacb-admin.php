@@ -15,18 +15,46 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WACB_Admin {
 
 	/**
-	 * Settings page slug.
+	 * Top-level dashboard menu slug.
 	 *
 	 * @var string
 	 */
-	const PAGE_SLUG = 'wacb-settings';
+	const MENU_SLUG = 'wacb-dashboard';
+
+	/**
+	 * Settings submenu slug.
+	 *
+	 * @var string
+	 */
+	const SETTINGS_SLUG = 'wacb-settings';
+
+	/**
+	 * Routing rules submenu slug.
+	 *
+	 * @var string
+	 */
+	const ROUTING_SLUG = 'wacb-routing-rules';
+
+	/**
+	 * Analytics submenu slug.
+	 *
+	 * @var string
+	 */
+	const ANALYTICS_SLUG = 'wacb-analytics';
 
 	/**
 	 * Settings page identifier.
 	 *
 	 * @var string
 	 */
-	const SETTINGS_PAGE = 'wacb-settings';
+	const SETTINGS_PAGE = 'wacb-settings-page';
+
+	/**
+	 * Routing page identifier.
+	 *
+	 * @var string
+	 */
+	const ROUTING_PAGE = 'wacb-routing-page';
 
 	/**
 	 * Settings group identifier.
@@ -34,20 +62,6 @@ class WACB_Admin {
 	 * @var string
 	 */
 	const SETTINGS_GROUP = 'wacb_settings_group';
-
-	/**
-	 * Settings tab identifier.
-	 *
-	 * @var string
-	 */
-	const TAB_SETTINGS = 'settings';
-
-	/**
-	 * Analytics tab identifier.
-	 *
-	 * @var string
-	 */
-	const TAB_ANALYTICS = 'analytics';
 
 	/**
 	 * Plugin slug.
@@ -64,11 +78,11 @@ class WACB_Admin {
 	private $version;
 
 	/**
-	 * Settings screen hook suffix.
+	 * Registered plugin admin screen hooks.
 	 *
-	 * @var string
+	 * @var array<string, string>
 	 */
-	private $settings_page_hook_suffix = '';
+	private $page_hooks = array();
 
 	/**
 	 * Constructor.
@@ -82,12 +96,13 @@ class WACB_Admin {
 	}
 
 	/**
-	 * Registers admin styles when the settings UI is introduced.
+	 * Registers admin styles on plugin pages.
 	 *
+	 * @param string $hook_suffix Current admin hook suffix.
 	 * @return void
 	 */
 	public function enqueue_styles( $hook_suffix = '' ) {
-		if ( ! $this->is_settings_screen( $hook_suffix ) ) {
+		if ( ! $this->is_plugin_screen( $hook_suffix ) ) {
 			return;
 		}
 
@@ -100,12 +115,13 @@ class WACB_Admin {
 	}
 
 	/**
-	 * Registers admin scripts when the settings UI is introduced.
+	 * Registers admin scripts on the routing rules page.
 	 *
+	 * @param string $hook_suffix Current admin hook suffix.
 	 * @return void
 	 */
 	public function enqueue_scripts( $hook_suffix = '' ) {
-		if ( ! $this->is_settings_screen( $hook_suffix ) ) {
+		if ( ! $this->is_routing_screen( $hook_suffix ) ) {
 			return;
 		}
 
@@ -119,17 +135,55 @@ class WACB_Admin {
 	}
 
 	/**
-	 * Registers the plugin settings page.
+	 * Registers the plugin admin menu and submenus.
 	 *
 	 * @return void
 	 */
 	public function register_admin_menu() {
-		$this->settings_page_hook_suffix = add_options_page(
+		$this->page_hooks[ self::MENU_SLUG ] = add_menu_page(
 			__( 'WhatsApp Chat Button', 'whatsapp-chat-button' ),
 			__( 'WhatsApp Chat Button', 'whatsapp-chat-button' ),
 			'manage_options',
-			self::PAGE_SLUG,
-			array( $this, 'display_plugin_page' )
+			self::MENU_SLUG,
+			array( $this, 'display_dashboard_page' ),
+			'dashicons-format-chat',
+			58
+		);
+
+		add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Dashboard', 'whatsapp-chat-button' ),
+			__( 'Dashboard', 'whatsapp-chat-button' ),
+			'manage_options',
+			self::MENU_SLUG,
+			array( $this, 'display_dashboard_page' )
+		);
+
+		$this->page_hooks[ self::SETTINGS_SLUG ] = add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Settings', 'whatsapp-chat-button' ),
+			__( 'Settings', 'whatsapp-chat-button' ),
+			'manage_options',
+			self::SETTINGS_SLUG,
+			array( $this, 'display_settings_page' )
+		);
+
+		$this->page_hooks[ self::ROUTING_SLUG ] = add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Routing Rules', 'whatsapp-chat-button' ),
+			__( 'Routing Rules', 'whatsapp-chat-button' ),
+			'manage_options',
+			self::ROUTING_SLUG,
+			array( $this, 'display_routing_page' )
+		);
+
+		$this->page_hooks[ self::ANALYTICS_SLUG ] = add_submenu_page(
+			self::MENU_SLUG,
+			__( 'Analytics', 'whatsapp-chat-button' ),
+			__( 'Analytics', 'whatsapp-chat-button' ),
+			'manage_options',
+			self::ANALYTICS_SLUG,
+			array( $this, 'display_analytics_page' )
 		);
 	}
 
@@ -235,38 +289,46 @@ class WACB_Admin {
 		);
 
 		add_settings_section(
+			'wacb_default_fallback_section',
+			__( 'Default Fallback', 'whatsapp-chat-button' ),
+			array( $this, 'render_default_fallback_section' ),
+			self::SETTINGS_PAGE
+		);
+
+		add_settings_field(
+			'wacb_default_fallback',
+			__( 'Fallback rule', 'whatsapp-chat-button' ),
+			array( $this, 'render_default_fallback_field' ),
+			self::SETTINGS_PAGE,
+			'wacb_default_fallback_section'
+		);
+
+		add_settings_section(
 			'wacb_routing_section',
 			__( 'Routing Rules', 'whatsapp-chat-button' ),
 			array( $this, 'render_routing_section' ),
-			self::SETTINGS_PAGE
+			self::ROUTING_PAGE
 		);
 
 		add_settings_field(
 			'wacb_routing_rules',
 			__( 'Routing rules', 'whatsapp-chat-button' ),
 			array( $this, 'render_routing_rules_field' ),
-			self::SETTINGS_PAGE,
+			self::ROUTING_PAGE,
 			'wacb_routing_section'
 		);
 	}
 
 	/**
-	 * Renders the plugin admin page.
+	 * Renders the dashboard page.
 	 *
 	 * @return void
 	 */
-	public function display_plugin_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'whatsapp-chat-button' ) );
-		}
+	public function display_dashboard_page() {
+		$this->abort_if_no_permissions();
 
-		$active_tab        = $this->get_active_tab();
-		$tabs              = $this->get_tabs();
-		$page_slug         = self::PAGE_SLUG;
-		$settings_group    = self::SETTINGS_GROUP;
-		$settings_page     = self::SETTINGS_PAGE;
 		$analytics_summary = $this->get_analytics_summary();
-		$view_path         = WACB_PLUGIN_DIR . 'admin/views/settings-page.php';
+		$view_path         = WACB_PLUGIN_DIR . 'admin/views/dashboard-page.php';
 
 		if ( is_readable( $view_path ) ) {
 			require $view_path;
@@ -274,11 +336,100 @@ class WACB_Admin {
 	}
 
 	/**
+	 * Renders the settings page.
+	 *
+	 * @return void
+	 */
+	public function display_settings_page() {
+		$this->abort_if_no_permissions();
+
+		$settings_group = self::SETTINGS_GROUP;
+		$settings_page  = self::SETTINGS_PAGE;
+		$view_path      = WACB_PLUGIN_DIR . 'admin/views/settings-page.php';
+
+		if ( is_readable( $view_path ) ) {
+			require $view_path;
+		}
+	}
+
+	/**
+	 * Renders the routing rules page.
+	 *
+	 * @return void
+	 */
+	public function display_routing_page() {
+		$this->abort_if_no_permissions();
+
+		$settings_group = self::SETTINGS_GROUP;
+		$settings_page  = self::ROUTING_PAGE;
+		$routing_rules  = WACB_Settings_Manager::get_specific_routing_rules();
+		$routing_count  = count( $routing_rules );
+		$view_path      = WACB_PLUGIN_DIR . 'admin/views/routing-page.php';
+
+		if ( is_readable( $view_path ) ) {
+			require $view_path;
+		}
+	}
+
+	/**
+	 * Renders the analytics page.
+	 *
+	 * @return void
+	 */
+	public function display_analytics_page() {
+		$this->abort_if_no_permissions();
+
+		$analytics_summary = $this->get_analytics_summary();
+		$view_path         = WACB_PLUGIN_DIR . 'admin/views/analytics-page.php';
+
+		if ( is_readable( $view_path ) ) {
+			require $view_path;
+		}
+	}
+
+	/**
+	 * Renders a section card using the Settings API globals.
+	 *
+	 * @param string $page       Settings page identifier.
+	 * @param string $section_id Section identifier.
+	 * @return void
+	 */
+	public function render_settings_section_card( $page, $section_id ) {
+		global $wp_settings_fields, $wp_settings_sections;
+
+		if ( empty( $wp_settings_sections[ $page ][ $section_id ] ) ) {
+			return;
+		}
+
+		$section = $wp_settings_sections[ $page ][ $section_id ];
+		?>
+		<section class="wacb-admin-card">
+			<div class="wacb-admin-card__header">
+				<?php if ( ! empty( $section['title'] ) ) : ?>
+					<h2 class="wacb-admin-card__title"><?php echo esc_html( $section['title'] ); ?></h2>
+				<?php endif; ?>
+				<?php if ( ! empty( $section['callback'] ) && is_callable( $section['callback'] ) ) : ?>
+					<div class="wacb-admin-card__description">
+						<?php call_user_func( $section['callback'], $section ); ?>
+					</div>
+				<?php endif; ?>
+			</div>
+
+			<?php if ( ! empty( $wp_settings_fields[ $page ][ $section_id ] ) ) : ?>
+				<table class="form-table wacb-admin-form-table" role="presentation">
+					<?php do_settings_fields( $page, $section_id ); ?>
+				</table>
+			<?php endif; ?>
+		</section>
+		<?php
+	}
+
+	/**
 	 * Renders the general section description.
 	 *
 	 * @return void
 	 */
-	public function render_general_section() {
+	public function render_general_section( $section = array() ) {
 		echo '<p>' . esc_html__( 'Configure the primary WhatsApp number and the default message template used when no routing rule overrides it.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
@@ -287,7 +438,7 @@ class WACB_Admin {
 	 *
 	 * @return void
 	 */
-	public function render_button_design_section() {
+	public function render_button_design_section( $section = array() ) {
 		echo '<p>' . esc_html__( 'These settings control how the floating button looks and when it appears on the frontend.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
@@ -296,8 +447,17 @@ class WACB_Admin {
 	 *
 	 * @return void
 	 */
-	public function render_variables_section() {
+	public function render_variables_section( $section = array() ) {
 		echo '<p>' . esc_html__( 'Use placeholders in the saved message template to personalize chats without hard-coding page details.', 'whatsapp-chat-button' ) . '</p>';
+	}
+
+	/**
+	 * Renders the default fallback section description.
+	 *
+	 * @return void
+	 */
+	public function render_default_fallback_section( $section = array() ) {
+		echo '<p>' . esc_html__( 'This fallback rule is used when no page, post, or category routing rule matches the current request.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -305,8 +465,8 @@ class WACB_Admin {
 	 *
 	 * @return void
 	 */
-	public function render_routing_section() {
-		echo '<p>' . esc_html__( 'Rules are evaluated in this order: page, post, category, then default fallback. The first matching rule wins, and the default rule is always checked last.', 'whatsapp-chat-button' ) . '</p>';
+	public function render_routing_section( $section = array() ) {
+		echo '<p>' . esc_html__( 'Rules are evaluated in this order: page, post, category, then default fallback. The first matching rule wins.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -317,6 +477,11 @@ class WACB_Admin {
 	public function render_enabled_field() {
 		$settings = WACB_Settings_Manager::get_settings();
 		?>
+		<input
+			name="<?php echo esc_attr( WACB_Settings_Manager::get_option_name() ); ?>[wacb_enabled]"
+			type="hidden"
+			value="0"
+		/>
 		<label for="wacb_enabled">
 			<input
 				name="<?php echo esc_attr( WACB_Settings_Manager::get_option_name() ); ?>[wacb_enabled]"
@@ -468,7 +633,7 @@ class WACB_Admin {
 	public function render_supported_variables_field() {
 		?>
 		<p><?php echo esc_html__( 'You can use the following placeholders in the default pre-filled message:', 'whatsapp-chat-button' ); ?></p>
-		<ul>
+		<ul class="wacb-variable-list">
 			<li><code>{page_title}</code></li>
 			<li><code>{url}</code></li>
 			<li><code>{site_name}</code></li>
@@ -480,14 +645,53 @@ class WACB_Admin {
 	}
 
 	/**
+	 * Renders the default fallback rule field.
+	 *
+	 * @return void
+	 */
+	public function render_default_fallback_field() {
+		$default_rule = WACB_Settings_Manager::get_default_routing_rule();
+		$settings_key = WACB_Settings_Manager::get_option_name();
+		?>
+		<div class="wacb-default-fallback">
+			<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][rule_type]" value="default" />
+			<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][target_id]" value="0" />
+			<p>
+				<label for="wacb_default_rule_label"><?php echo esc_html__( 'Label', 'whatsapp-chat-button' ); ?></label>
+				<input
+					type="text"
+					class="regular-text"
+					id="wacb_default_rule_label"
+					name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][label]"
+					value="<?php echo esc_attr( (string) $default_rule['label'] ); ?>"
+				/>
+			</p>
+			<p>
+				<label for="wacb_default_rule_number"><?php echo esc_html__( 'Fallback number override', 'whatsapp-chat-button' ); ?></label>
+				<input
+					type="text"
+					class="regular-text"
+					inputmode="numeric"
+					id="wacb_default_rule_number"
+					name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][number]"
+					value="<?php echo esc_attr( (string) $default_rule['number'] ); ?>"
+					placeholder="<?php echo esc_attr__( 'Leave empty to use the primary number', 'whatsapp-chat-button' ); ?>"
+				/>
+			</p>
+			<p class="description">
+				<?php echo esc_html__( 'Leave the override empty to fall back to the primary WhatsApp number from the General section.', 'whatsapp-chat-button' ); ?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Renders routing rules.
 	 *
 	 * @return void
 	 */
 	public function render_routing_rules_field() {
-		$routing_rules     = WACB_Settings_Manager::get_routing_rules();
-		$default_rule      = WACB_Settings_Manager::get_default_routing_rules()[0];
-		$specific_rules    = array();
+		$specific_rules    = WACB_Settings_Manager::get_specific_routing_rules();
 		$page_options      = $this->get_page_options();
 		$post_options      = $this->get_post_options();
 		$category_options  = $this->get_category_options();
@@ -496,19 +700,10 @@ class WACB_Admin {
 		$settings_key      = WACB_Settings_Manager::get_option_name();
 
 		unset( $rule_type_options['default'] );
-
-		foreach ( $routing_rules as $routing_rule ) {
-			if ( 'default' === $routing_rule['rule_type'] ) {
-				$default_rule = $routing_rule;
-				continue;
-			}
-
-			$specific_rules[] = $routing_rule;
-		}
 		?>
 		<div class="wacb-routing-rules" data-wacb-routing-rules data-wacb-next-index="<?php echo esc_attr( (string) count( $specific_rules ) ); ?>">
 			<p class="description">
-				<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. Evaluation priority is fixed as page, post, category, then default fallback.', 'whatsapp-chat-button' ); ?>
+				<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. Page rules are checked first, followed by post rules, then category rules.', 'whatsapp-chat-button' ); ?>
 			</p>
 			<?php if ( empty( $page_options ) || empty( $post_options ) || empty( $category_options ) ) : ?>
 				<p class="description">
@@ -542,44 +737,11 @@ class WACB_Admin {
 				</tbody>
 			</table>
 
-			<p>
-				<button type="button" class="button" data-wacb-add-rule>
+			<p class="wacb-routing-rules__actions">
+				<button type="button" class="button button-secondary" data-wacb-add-rule>
 					<?php echo esc_html__( 'Add routing rule', 'whatsapp-chat-button' ); ?>
 				</button>
 			</p>
-
-			<div class="wacb-routing-default-rule">
-				<h4><?php echo esc_html__( 'Default fallback', 'whatsapp-chat-button' ); ?></h4>
-				<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][rule_type]" value="default" />
-				<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][target_id]" value="0" />
-				<p>
-					<label for="wacb_default_rule_label"><?php echo esc_html__( 'Label', 'whatsapp-chat-button' ); ?></label>
-					<br />
-					<input
-						type="text"
-						class="regular-text"
-						id="wacb_default_rule_label"
-						name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][label]"
-						value="<?php echo esc_attr( (string) $default_rule['label'] ); ?>"
-					/>
-				</p>
-				<p>
-					<label for="wacb_default_rule_number"><?php echo esc_html__( 'Fallback number override', 'whatsapp-chat-button' ); ?></label>
-					<br />
-					<input
-						type="text"
-						class="regular-text"
-						inputmode="numeric"
-						id="wacb_default_rule_number"
-						name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][number]"
-						value="<?php echo esc_attr( (string) $default_rule['number'] ); ?>"
-						placeholder="<?php echo esc_attr__( 'Leave empty to use the primary number', 'whatsapp-chat-button' ); ?>"
-					/>
-				</p>
-				<p class="description">
-					<?php echo esc_html__( 'Keep this empty to fall back to the primary WhatsApp number from the General section.', 'whatsapp-chat-button' ); ?>
-				</p>
-			</div>
 
 			<?php
 			ob_start();
@@ -599,44 +761,18 @@ class WACB_Admin {
 	}
 
 	/**
-	 * Returns the active admin tab.
-	 *
-	 * @return string
-	 */
-	private function get_active_tab() {
-		$active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : self::TAB_SETTINGS;
-		$tabs       = array_keys( $this->get_tabs() );
-
-		if ( ! in_array( $active_tab, $tabs, true ) ) {
-			return self::TAB_SETTINGS;
-		}
-
-		return $active_tab;
-	}
-
-	/**
-	 * Returns available admin tabs.
-	 *
-	 * @return array<string, string>
-	 */
-	private function get_tabs() {
-		return array(
-			self::TAB_SETTINGS  => __( 'Settings', 'whatsapp-chat-button' ),
-			self::TAB_ANALYTICS => __( 'Analytics', 'whatsapp-chat-button' ),
-		);
-	}
-
-	/**
-	 * Returns analytics summary data for the admin tab.
+	 * Returns analytics summary data for the admin pages.
 	 *
 	 * @return array<string, mixed>
 	 */
 	private function get_analytics_summary() {
-		$table_name         = WACB_Tracking_Engine::get_table_name();
-		$table_exists       = WACB_Tracking_Engine::table_exists();
-		$has_click_data     = WACB_Tracking_Engine::has_click_data();
-		$table_exists_label = $table_exists ? __( 'Ready', 'whatsapp-chat-button' ) : __( 'Not available yet', 'whatsapp-chat-button' );
+		$table_name          = WACB_Tracking_Engine::get_table_name();
+		$table_exists        = WACB_Tracking_Engine::table_exists();
+		$has_click_data      = WACB_Tracking_Engine::has_click_data();
+		$device_breakdown    = WACB_Tracking_Engine::get_device_breakdown();
+		$table_exists_label  = $table_exists ? __( 'Ready', 'whatsapp-chat-button' ) : __( 'Not available yet', 'whatsapp-chat-button' );
 		$empty_state_message = '';
+		$tracked_devices     = absint( $device_breakdown['mobile'] ) + absint( $device_breakdown['desktop'] );
 
 		if ( ! $table_exists ) {
 			$empty_state_message = __( 'The analytics table is not available. Reactivate the plugin if tracking does not start after activation.', 'whatsapp-chat-button' );
@@ -645,26 +781,48 @@ class WACB_Admin {
 		}
 
 		return array(
-			'table_name'         => $table_name,
-			'table_exists'       => $table_exists,
-			'has_click_data'     => $has_click_data,
-			'table_exists_label' => $table_exists_label,
+			'table_name'          => $table_name,
+			'table_exists'        => $table_exists,
+			'has_click_data'      => $has_click_data,
+			'table_exists_label'  => $table_exists_label,
 			'empty_state_message' => $empty_state_message,
-			'total_clicks'       => WACB_Tracking_Engine::get_total_clicks(),
-			'clicks_today'       => WACB_Tracking_Engine::get_clicks_today(),
-			'top_pages'          => WACB_Tracking_Engine::get_top_pages( 5 ),
-			'device_breakdown'   => WACB_Tracking_Engine::get_device_breakdown(),
+			'total_clicks'        => WACB_Tracking_Engine::get_total_clicks(),
+			'clicks_today'        => WACB_Tracking_Engine::get_clicks_today(),
+			'top_pages'           => WACB_Tracking_Engine::get_top_pages( 5 ),
+			'device_breakdown'    => $device_breakdown,
+			'tracked_devices'     => $tracked_devices,
 		);
 	}
 
 	/**
-	 * Returns whether the current screen is the plugin settings page.
+	 * Returns whether the current screen is a plugin admin page.
 	 *
 	 * @param string $hook_suffix Hook suffix.
 	 * @return bool
 	 */
-	private function is_settings_screen( $hook_suffix ) {
-		return '' !== $this->settings_page_hook_suffix && $this->settings_page_hook_suffix === $hook_suffix;
+	private function is_plugin_screen( $hook_suffix ) {
+		return '' !== $hook_suffix && in_array( $hook_suffix, $this->page_hooks, true );
+	}
+
+	/**
+	 * Returns whether the current screen is the routing rules page.
+	 *
+	 * @param string $hook_suffix Hook suffix.
+	 * @return bool
+	 */
+	private function is_routing_screen( $hook_suffix ) {
+		return isset( $this->page_hooks[ self::ROUTING_SLUG ] ) && $this->page_hooks[ self::ROUTING_SLUG ] === $hook_suffix;
+	}
+
+	/**
+	 * Halts execution if the current user cannot manage plugin settings.
+	 *
+	 * @return void
+	 */
+	private function abort_if_no_permissions() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'whatsapp-chat-button' ) );
+		}
 	}
 
 	/**
