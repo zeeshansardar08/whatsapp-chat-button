@@ -53,7 +53,7 @@ class WACB_Activator {
 
 		update_option(
 			WACB_Settings_Manager::get_option_name(),
-			wp_parse_args( $current_settings, WACB_Settings_Manager::get_defaults() )
+			WACB_Settings_Manager::normalize_settings( $current_settings )
 		);
 	}
 

@@ -100,7 +100,15 @@ class WACB_Message_Resolver {
 			$request_uri = '/';
 		}
 
-		return esc_url_raw( home_url( '/' . ltrim( $request_uri, '/' ) ) );
+		$request_uri = strtok( $request_uri, '#' );
+
+		if ( ! is_string( $request_uri ) || '' === $request_uri || 0 !== strpos( $request_uri, '/' ) ) {
+			$request_uri = '/';
+		}
+
+		$current_url = esc_url_raw( home_url( $request_uri ) );
+
+		return is_string( $current_url ) ? $current_url : esc_url_raw( home_url( '/' ) );
 	}
 
 	/**

@@ -279,7 +279,7 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function render_general_section() {
-		echo '<p>' . esc_html__( 'Configure the primary WhatsApp number and the default message template used by the plugin.', 'whatsapp-chat-button' ) . '</p>';
+		echo '<p>' . esc_html__( 'Configure the primary WhatsApp number and the default message template used when no routing rule overrides it.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -288,7 +288,7 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function render_button_design_section() {
-		echo '<p>' . esc_html__( 'These design settings control the frontend button appearance.', 'whatsapp-chat-button' ) . '</p>';
+		echo '<p>' . esc_html__( 'These settings control how the floating button looks and when it appears on the frontend.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -297,7 +297,7 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function render_variables_section() {
-		echo '<p>' . esc_html__( 'Use placeholders in the default message to personalize chats without hard-coding page details.', 'whatsapp-chat-button' ) . '</p>';
+		echo '<p>' . esc_html__( 'Use placeholders in the saved message template to personalize chats without hard-coding page details.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -306,7 +306,7 @@ class WACB_Admin {
 	 * @return void
 	 */
 	public function render_routing_section() {
-		echo '<p>' . esc_html__( 'Rules are evaluated in this order: page, post, category, then default fallback. The first matching rule wins.', 'whatsapp-chat-button' ) . '</p>';
+		echo '<p>' . esc_html__( 'Rules are evaluated in this order: page, post, category, then default fallback. The first matching rule wins, and the default rule is always checked last.', 'whatsapp-chat-button' ) . '</p>';
 	}
 
 	/**
@@ -325,7 +325,7 @@ class WACB_Admin {
 				value="1"
 				<?php checked( 1, (int) $settings['wacb_enabled'] ); ?>
 			/>
-			<?php echo esc_html__( 'Allow the plugin to render its frontend output once that phase is enabled.', 'whatsapp-chat-button' ); ?>
+			<?php echo esc_html__( 'Render the floating WhatsApp button on the frontend when the plugin has a valid number to use.', 'whatsapp-chat-button' ); ?>
 		</label>
 		<?php
 	}
@@ -348,7 +348,7 @@ class WACB_Admin {
 			placeholder="15551234567"
 		/>
 		<p class="description">
-			<?php echo esc_html__( 'Use the international format required by wa.me. Only digits are stored.', 'whatsapp-chat-button' ); ?>
+			<?php echo esc_html__( 'Use the international format required by wa.me, for example 15551234567. Spaces, plus signs, and punctuation are removed before saving.', 'whatsapp-chat-button' ); ?>
 		</p>
 		<?php
 	}
@@ -368,7 +368,7 @@ class WACB_Admin {
 			rows="5"
 		><?php echo esc_textarea( $settings['wacb_default_message'] ); ?></textarea>
 		<p class="description">
-			<?php echo esc_html__( 'Supported placeholders can be included in this saved template and will be documented below.', 'whatsapp-chat-button' ); ?>
+			<?php echo esc_html__( 'Supported placeholders can be included in this template. They are replaced at runtime using the current page context.', 'whatsapp-chat-button' ); ?>
 		</p>
 		<?php
 	}
@@ -388,6 +388,9 @@ class WACB_Admin {
 			class="regular-text"
 			value="<?php echo esc_attr( $settings['wacb_button_text'] ); ?>"
 		/>
+		<p class="description">
+			<?php echo esc_html__( 'Keep the label short so it stays readable on smaller screens.', 'whatsapp-chat-button' ); ?>
+		</p>
 		<?php
 	}
 
@@ -407,6 +410,9 @@ class WACB_Admin {
 				<?php echo esc_html__( 'Right', 'whatsapp-chat-button' ); ?>
 			</option>
 		</select>
+		<p class="description">
+			<?php echo esc_html__( 'Choose which side of the screen the floating button should attach to.', 'whatsapp-chat-button' ); ?>
+		</p>
 		<?php
 	}
 
@@ -448,6 +454,9 @@ class WACB_Admin {
 			value="<?php echo esc_attr( (string) $settings['wacb_button_delay'] ); ?>"
 		/>
 		<span><?php echo esc_html__( 'seconds', 'whatsapp-chat-button' ); ?></span>
+		<p class="description">
+			<?php echo esc_html__( 'Set to 0 to show the button immediately after page load.', 'whatsapp-chat-button' ); ?>
+		</p>
 		<?php
 	}
 
@@ -465,7 +474,7 @@ class WACB_Admin {
 			<li><code>{site_name}</code></li>
 		</ul>
 		<p class="description">
-			<?php echo esc_html__( 'These values are stored as part of the message template and replaced at runtime on the frontend.', 'whatsapp-chat-button' ); ?>
+			<?php echo esc_html__( 'They are stored in the saved message template and replaced only when the button is rendered.', 'whatsapp-chat-button' ); ?>
 		</p>
 		<?php
 	}
@@ -499,8 +508,13 @@ class WACB_Admin {
 		?>
 		<div class="wacb-routing-rules" data-wacb-routing-rules data-wacb-next-index="<?php echo esc_attr( (string) count( $specific_rules ) ); ?>">
 			<p class="description">
-				<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. The first match within each rule type wins, and the default fallback is always checked last.', 'whatsapp-chat-button' ); ?>
+				<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. Evaluation priority is fixed as page, post, category, then default fallback.', 'whatsapp-chat-button' ); ?>
 			</p>
+			<?php if ( empty( $page_options ) || empty( $post_options ) || empty( $category_options ) ) : ?>
+				<p class="description">
+					<?php echo esc_html__( 'Some selector lists are currently empty. Only existing published pages, published posts, and categories can be targeted.', 'whatsapp-chat-button' ); ?>
+				</p>
+			<?php endif; ?>
 
 			<table class="widefat striped wacb-routing-rules-table">
 				<thead>
@@ -562,6 +576,9 @@ class WACB_Admin {
 						placeholder="<?php echo esc_attr__( 'Leave empty to use the primary number', 'whatsapp-chat-button' ); ?>"
 					/>
 				</p>
+				<p class="description">
+					<?php echo esc_html__( 'Keep this empty to fall back to the primary WhatsApp number from the General section.', 'whatsapp-chat-button' ); ?>
+				</p>
 			</div>
 
 			<?php
@@ -610,18 +627,29 @@ class WACB_Admin {
 	}
 
 	/**
-	 * Returns analytics placeholder data.
+	 * Returns analytics summary data for the admin tab.
 	 *
-	 * @return array<string, int|string>
+	 * @return array<string, mixed>
 	 */
 	private function get_analytics_summary() {
 		$table_name         = WACB_Tracking_Engine::get_table_name();
 		$table_exists       = WACB_Tracking_Engine::table_exists();
+		$has_click_data     = WACB_Tracking_Engine::has_click_data();
 		$table_exists_label = $table_exists ? __( 'Ready', 'whatsapp-chat-button' ) : __( 'Not available yet', 'whatsapp-chat-button' );
+		$empty_state_message = '';
+
+		if ( ! $table_exists ) {
+			$empty_state_message = __( 'The analytics table is not available. Reactivate the plugin if tracking does not start after activation.', 'whatsapp-chat-button' );
+		} elseif ( ! $has_click_data ) {
+			$empty_state_message = __( 'No click data has been recorded yet. Analytics will start appearing after visitors click the frontend button.', 'whatsapp-chat-button' );
+		}
 
 		return array(
 			'table_name'         => $table_name,
+			'table_exists'       => $table_exists,
+			'has_click_data'     => $has_click_data,
 			'table_exists_label' => $table_exists_label,
+			'empty_state_message' => $empty_state_message,
 			'total_clicks'       => WACB_Tracking_Engine::get_total_clicks(),
 			'clicks_today'       => WACB_Tracking_Engine::get_clicks_today(),
 			'top_pages'          => WACB_Tracking_Engine::get_top_pages( 5 ),
