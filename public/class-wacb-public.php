@@ -135,6 +135,16 @@ class WACB_Public {
 		}
 
 		$page_url = isset( $_POST['page_url'] ) ? wp_unslash( $_POST['page_url'] ) : '';
+
+		if ( ! is_string( $page_url ) || '' === $page_url ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Missing tracking payload.', 'whatsapp-chat-button' ),
+				),
+				400
+			);
+		}
+
 		$inserted = WACB_Tracking_Engine::insert_click( $page_url, WACB_Tracking_Engine::detect_device() );
 
 		if ( ! $inserted ) {
@@ -161,7 +171,7 @@ class WACB_Public {
 
 		$this->button_data = false;
 
-		if ( is_admin() || wp_doing_ajax() || is_feed() || is_embed() ) {
+		if ( is_admin() || wp_doing_ajax() || is_feed() || is_embed() || wp_is_json_request() ) {
 			return $this->button_data;
 		}
 

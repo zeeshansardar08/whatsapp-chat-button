@@ -40,6 +40,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<p>
 				<?php echo esc_html__( 'This screen shows lightweight click analytics collected when visitors use the WhatsApp button. The plugin stores only page URL, click time, and a simple device label.', 'whatsapp-chat-button' ); ?>
 			</p>
+			<?php if ( ! empty( $analytics_summary['empty_state_message'] ) ) : ?>
+				<div class="notice notice-info inline">
+					<p><?php echo esc_html( $analytics_summary['empty_state_message'] ); ?></p>
+				</div>
+			<?php endif; ?>
 			<table class="widefat striped">
 				<tbody>
 					<tr>
@@ -84,7 +89,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</tbody>
 				</table>
 			<?php else : ?>
-				<p><?php echo esc_html__( 'No click data has been recorded yet.', 'whatsapp-chat-button' ); ?></p>
+				<p><?php echo esc_html__( 'No page-level click data is available yet.', 'whatsapp-chat-button' ); ?></p>
 			<?php endif; ?>
 
 			<h3><?php echo esc_html__( 'Device Breakdown', 'whatsapp-chat-button' ); ?></h3>
@@ -106,6 +111,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</tr>
 				</tbody>
 			</table>
+			<p class="description">
+				<?php echo esc_html__( 'Device detection uses WordPress core mobile detection and stores only a simple mobile or desktop label.', 'whatsapp-chat-button' ); ?>
+			</p>
 		</div>
 	<?php else : ?>
 		<?php settings_errors( WACB_Settings_Manager::get_option_name() ); ?>

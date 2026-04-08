@@ -65,7 +65,7 @@ class WACB_Settings_Manager {
 	/**
 	 * Returns the default routing rules structure.
 	 *
-	 * @return array<int, array<string, string>>
+	 * @return array<int, array<string, int|string>>
 	 */
 	public static function get_default_routing_rules() {
 		return array(
@@ -73,7 +73,7 @@ class WACB_Settings_Manager {
 				'rule_type' => 'default',
 				'target_id' => 0,
 				'label'     => 'Default fallback',
-				'number'     => '',
+				'number'    => '',
 			),
 		);
 	}
@@ -280,7 +280,7 @@ class WACB_Settings_Manager {
 	 * Normalizes routing rules to the MVP schema.
 	 *
 	 * @param mixed $routing_rules Raw routing rules.
-	 * @return array<int, array<string, string>>
+	 * @return array<int, array<string, int|string>>
 	 */
 	public static function normalize_routing_rules( $routing_rules ) {
 		$normalized_rules = array();

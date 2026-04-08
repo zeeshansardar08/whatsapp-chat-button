@@ -22,6 +22,13 @@ class WACB_Tracking_Engine {
 	const TABLE_SUFFIX = 'wacb_clicks';
 
 	/**
+	 * Maximum stored page URL length.
+	 *
+	 * @var int
+	 */
+	const MAX_PAGE_URL_LENGTH = 2000;
+
+	/**
 	 * Supported device labels.
 	 *
 	 * @var string[]
@@ -141,6 +148,16 @@ class WACB_Tracking_Engine {
 	}
 
 	/**
+	 * Returns whether any click records exist.
+	 *
+	 * @param wpdb|null $wpdb_instance WordPress database object.
+	 * @return bool
+	 */
+	public static function has_click_data( $wpdb_instance = null ) {
+		return self::get_total_clicks( $wpdb_instance ) > 0;
+	}
+
+	/**
 	 * Inserts a tracked click.
 	 *
 	 * @param string    $page_url      Clicked page URL.
@@ -246,9 +263,18 @@ class WACB_Tracking_Engine {
 			return array();
 		}
 
-		return array_map(
+		$normalized_results = array_map(
 			array( __CLASS__, 'normalize_top_page_row' ),
 			$results
+		);
+
+		return array_values(
+			array_filter(
+				$normalized_results,
+				static function ( $result ) {
+					return ! empty( $result['page_url'] );
+				}
+			)
 		);
 	}
 
@@ -320,7 +346,7 @@ class WACB_Tracking_Engine {
 	 */
 	private static function normalize_top_page_row( $row ) {
 		return array(
-			'page_url'   => self::sanitize_page_url( $row['page_url'] ?? '' ),
+			'page_url'    => self::sanitize_page_url( $row['page_url'] ?? '' ),
 			'click_count' => absint( $row['click_count'] ?? 0 ),
 		);
 	}
@@ -333,6 +359,33 @@ class WACB_Tracking_Engine {
 	 */
 	private static function sanitize_page_url( $page_url ) {
 		$page_url = esc_url_raw( (string) $page_url );
+		$site_url = wp_parse_url( home_url( '/' ) );
+
+		if ( ! is_string( $page_url ) || '' === $page_url || strlen( $page_url ) > self::MAX_PAGE_URL_LENGTH ) {
+			return '';
+		}
+
+		if ( ! wp_http_validate_url( $page_url ) ) {
+			return '';
+		}
+
+		$parsed_url = wp_parse_url( $page_url );
+
+		if ( ! is_array( $parsed_url ) || ! is_array( $site_url ) ) {
+			return '';
+		}
+
+		if ( empty( $parsed_url['scheme'] ) || ! in_array( $parsed_url['scheme'], array( 'http', 'https' ), true ) ) {
+			return '';
+		}
+
+		if ( empty( $parsed_url['host'] ) || empty( $site_url['host'] ) ) {
+			return '';
+		}
+
+		if ( strtolower( $parsed_url['host'] ) !== strtolower( $site_url['host'] ) ) {
+			return '';
+		}
 
 		return is_string( $page_url ) ? $page_url : '';
 	}
