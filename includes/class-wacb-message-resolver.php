@@ -49,12 +49,7 @@ class WACB_Message_Resolver {
 		$message  = (string) $message;
 
 		if ( '' !== $message ) {
-			$chat_url = add_query_arg(
-				array(
-					'text' => $message,
-				),
-				$chat_url
-			);
+			$chat_url .= '?text=' . rawurlencode( $message );
 		}
 
 		return esc_url_raw( $chat_url );
