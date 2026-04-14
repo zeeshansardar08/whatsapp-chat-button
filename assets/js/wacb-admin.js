@@ -16,6 +16,18 @@
 		} );
 	};
 
+	var toggleEmptyState = function ( root, body ) {
+		var emptyState = root.querySelector( '[data-wacb-empty-state]' );
+		var hasRows = body && body.querySelectorAll( '[data-wacb-rule-row]' ).length > 0;
+
+		if ( ! emptyState ) {
+			return;
+		}
+
+		emptyState.hidden = hasRows;
+		emptyState.classList.toggle( 'is-hidden', hasRows );
+	};
+
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var routingRoot = document.querySelector( '[data-wacb-routing-rules]' );
 
@@ -33,6 +45,7 @@
 		}
 
 		rulesBody.querySelectorAll( '[data-wacb-rule-row]' ).forEach( updateRowTargetState );
+		toggleEmptyState( routingRoot, rulesBody );
 
 		routingRoot.addEventListener( 'change', function ( event ) {
 			var target = event.target.closest( '[data-wacb-rule-type]' );
@@ -52,6 +65,7 @@
 
 				if ( row ) {
 					row.remove();
+					toggleEmptyState( routingRoot, rulesBody );
 				}
 
 				return;
@@ -69,6 +83,7 @@
 			if ( template.content.firstElementChild ) {
 				rulesBody.appendChild( template.content.firstElementChild );
 				updateRowTargetState( rulesBody.lastElementChild );
+				toggleEmptyState( routingRoot, rulesBody );
 				nextIndex += 1;
 				routingRoot.setAttribute( 'data-wacb-next-index', String( nextIndex ) );
 			}
