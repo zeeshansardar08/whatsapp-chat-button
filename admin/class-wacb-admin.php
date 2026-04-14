@@ -328,6 +328,7 @@ class WACB_Admin {
 		$this->abort_if_no_permissions();
 
 		$analytics_summary = $this->get_analytics_summary();
+		$plugin_summary    = $this->get_plugin_summary();
 		$view_path         = WACB_PLUGIN_DIR . 'admin/views/dashboard-page.php';
 
 		if ( is_readable( $view_path ) ) {
@@ -345,6 +346,7 @@ class WACB_Admin {
 
 		$settings_group = self::SETTINGS_GROUP;
 		$settings_page  = self::SETTINGS_PAGE;
+		$plugin_summary = $this->get_plugin_summary();
 		$view_path      = WACB_PLUGIN_DIR . 'admin/views/settings-page.php';
 
 		if ( is_readable( $view_path ) ) {
@@ -364,6 +366,7 @@ class WACB_Admin {
 		$settings_page  = self::ROUTING_PAGE;
 		$routing_rules  = WACB_Settings_Manager::get_specific_routing_rules();
 		$routing_count  = count( $routing_rules );
+		$plugin_summary = $this->get_plugin_summary();
 		$view_path      = WACB_PLUGIN_DIR . 'admin/views/routing-page.php';
 
 		if ( is_readable( $view_path ) ) {
@@ -380,6 +383,7 @@ class WACB_Admin {
 		$this->abort_if_no_permissions();
 
 		$analytics_summary = $this->get_analytics_summary();
+		$plugin_summary    = $this->get_plugin_summary();
 		$view_path         = WACB_PLUGIN_DIR . 'admin/views/analytics-page.php';
 
 		if ( is_readable( $view_path ) ) {
@@ -403,7 +407,7 @@ class WACB_Admin {
 
 		$section = $wp_settings_sections[ $page ][ $section_id ];
 		?>
-		<section class="wacb-admin-card">
+		<section class="wacb-admin-card wacb-admin-card--section">
 			<div class="wacb-admin-card__header">
 				<?php if ( ! empty( $section['title'] ) ) : ?>
 					<h2 class="wacb-admin-card__title"><?php echo esc_html( $section['title'] ); ?></h2>
@@ -632,15 +636,17 @@ class WACB_Admin {
 	 */
 	public function render_supported_variables_field() {
 		?>
-		<p><?php echo esc_html__( 'You can use the following placeholders in the default pre-filled message:', 'whatsapp-chat-button' ); ?></p>
-		<ul class="wacb-variable-list">
-			<li><code>{page_title}</code></li>
-			<li><code>{url}</code></li>
-			<li><code>{site_name}</code></li>
-		</ul>
-		<p class="description">
-			<?php echo esc_html__( 'They are stored in the saved message template and replaced only when the button is rendered.', 'whatsapp-chat-button' ); ?>
-		</p>
+		<div class="wacb-token-panel">
+			<p class="wacb-token-panel__title"><?php echo esc_html__( 'Available placeholders', 'whatsapp-chat-button' ); ?></p>
+			<div class="wacb-token-list">
+				<span class="wacb-token">{page_title}</span>
+				<span class="wacb-token">{url}</span>
+				<span class="wacb-token">{site_name}</span>
+			</div>
+			<p class="description">
+				<?php echo esc_html__( 'They are stored in the saved message template and replaced only when the button is rendered.', 'whatsapp-chat-button' ); ?>
+			</p>
+		</div>
 		<?php
 	}
 
@@ -653,10 +659,10 @@ class WACB_Admin {
 		$default_rule = WACB_Settings_Manager::get_default_routing_rule();
 		$settings_key = WACB_Settings_Manager::get_option_name();
 		?>
-		<div class="wacb-default-fallback">
+		<div class="wacb-default-fallback wacb-form-grid">
 			<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][rule_type]" value="default" />
 			<input type="hidden" name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][target_id]" value="0" />
-			<p>
+			<div class="wacb-form-grid__item">
 				<label for="wacb_default_rule_label"><?php echo esc_html__( 'Label', 'whatsapp-chat-button' ); ?></label>
 				<input
 					type="text"
@@ -665,8 +671,8 @@ class WACB_Admin {
 					name="<?php echo esc_attr( $settings_key ); ?>[wacb_routing_rules][default][label]"
 					value="<?php echo esc_attr( (string) $default_rule['label'] ); ?>"
 				/>
-			</p>
-			<p>
+			</div>
+			<div class="wacb-form-grid__item">
 				<label for="wacb_default_rule_number"><?php echo esc_html__( 'Fallback number override', 'whatsapp-chat-button' ); ?></label>
 				<input
 					type="text"
@@ -677,8 +683,8 @@ class WACB_Admin {
 					value="<?php echo esc_attr( (string) $default_rule['number'] ); ?>"
 					placeholder="<?php echo esc_attr__( 'Leave empty to use the primary number', 'whatsapp-chat-button' ); ?>"
 				/>
-			</p>
-			<p class="description">
+			</div>
+			<p class="description wacb-form-grid__footer">
 				<?php echo esc_html__( 'Leave the override empty to fall back to the primary WhatsApp number from the General section.', 'whatsapp-chat-button' ); ?>
 			</p>
 		</div>
@@ -692,6 +698,7 @@ class WACB_Admin {
 	 */
 	public function render_routing_rules_field() {
 		$specific_rules    = WACB_Settings_Manager::get_specific_routing_rules();
+		$default_rule      = WACB_Settings_Manager::get_default_routing_rule();
 		$page_options      = $this->get_page_options();
 		$post_options      = $this->get_post_options();
 		$category_options  = $this->get_category_options();
@@ -702,46 +709,70 @@ class WACB_Admin {
 		unset( $rule_type_options['default'] );
 		?>
 		<div class="wacb-routing-rules" data-wacb-routing-rules data-wacb-next-index="<?php echo esc_attr( (string) count( $specific_rules ) ); ?>">
-			<p class="description">
-				<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. Page rules are checked first, followed by post rules, then category rules.', 'whatsapp-chat-button' ); ?>
-			</p>
-			<?php if ( empty( $page_options ) || empty( $post_options ) || empty( $category_options ) ) : ?>
-				<p class="description">
-					<?php echo esc_html__( 'Some selector lists are currently empty. Only existing published pages, published posts, and categories can be targeted.', 'whatsapp-chat-button' ); ?>
-				</p>
-			<?php endif; ?>
-
-			<table class="widefat striped wacb-routing-rules-table">
-				<thead>
-					<tr>
-						<th scope="col"><?php echo esc_html__( 'Rule label', 'whatsapp-chat-button' ); ?></th>
-						<th scope="col"><?php echo esc_html__( 'Rule type', 'whatsapp-chat-button' ); ?></th>
-						<th scope="col"><?php echo esc_html__( 'Target', 'whatsapp-chat-button' ); ?></th>
-						<th scope="col"><?php echo esc_html__( 'WhatsApp number', 'whatsapp-chat-button' ); ?></th>
-						<th scope="col"><?php echo esc_html__( 'Action', 'whatsapp-chat-button' ); ?></th>
-					</tr>
-				</thead>
-				<tbody data-wacb-rules-body>
-					<?php foreach ( $specific_rules as $index => $rule ) : ?>
+			<div class="wacb-toolbar">
+				<div class="wacb-toolbar__content">
+					<p class="wacb-toolbar__title"><?php echo esc_html__( 'Rules workspace', 'whatsapp-chat-button' ); ?></p>
+					<p class="wacb-toolbar__text">
+						<?php echo esc_html__( 'Add specific rules for pages, posts, and categories. Page rules are checked first, followed by post rules, then category rules.', 'whatsapp-chat-button' ); ?>
+					</p>
+					<p class="wacb-toolbar__text">
 						<?php
-						$this->render_routing_rule_row(
-							$settings_key . '[wacb_routing_rules][' . (string) $index . ']',
-							$rule,
-							$rule_type_options,
-							$page_options,
-							$post_options,
-							$category_options
+						echo esc_html(
+							sprintf(
+								/* translators: %s: fallback rule description. */
+								__( 'Default fallback: %s', 'whatsapp-chat-button' ),
+								'' !== (string) $default_rule['number'] ? __( 'Custom fallback number configured', 'whatsapp-chat-button' ) : __( 'Uses the primary WhatsApp number', 'whatsapp-chat-button' )
+							)
 						);
 						?>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
+					</p>
+					<?php if ( empty( $page_options ) || empty( $post_options ) || empty( $category_options ) ) : ?>
+						<p class="wacb-toolbar__text">
+							<?php echo esc_html__( 'Some selector lists are currently empty. Only existing published pages, published posts, and categories can be targeted.', 'whatsapp-chat-button' ); ?>
+						</p>
+					<?php endif; ?>
+				</div>
+				<div class="wacb-toolbar__actions">
+					<button type="button" class="button button-secondary" data-wacb-add-rule>
+						<?php echo esc_html__( 'Add routing rule', 'whatsapp-chat-button' ); ?>
+					</button>
+				</div>
+			</div>
 
-			<p class="wacb-routing-rules__actions">
-				<button type="button" class="button button-secondary" data-wacb-add-rule>
-					<?php echo esc_html__( 'Add routing rule', 'whatsapp-chat-button' ); ?>
-				</button>
-			</p>
+			<div class="wacb-empty-state<?php echo empty( $specific_rules ) ? '' : ' is-hidden'; ?>" data-wacb-empty-state<?php echo empty( $specific_rules ) ? '' : ' hidden'; ?>>
+				<h3 class="wacb-empty-state__title"><?php echo esc_html__( 'No specific rules added yet', 'whatsapp-chat-button' ); ?></h3>
+				<p class="wacb-empty-state__text">
+					<?php echo esc_html__( 'Create your first routing rule to send pages, posts, or categories to a dedicated WhatsApp number while keeping the default fallback in place.', 'whatsapp-chat-button' ); ?>
+				</p>
+			</div>
+
+			<div class="wacb-table-card">
+				<table class="widefat striped wacb-routing-rules-table">
+					<thead>
+						<tr>
+							<th scope="col"><?php echo esc_html__( 'Rule label', 'whatsapp-chat-button' ); ?></th>
+							<th scope="col"><?php echo esc_html__( 'Rule type', 'whatsapp-chat-button' ); ?></th>
+							<th scope="col"><?php echo esc_html__( 'Target', 'whatsapp-chat-button' ); ?></th>
+							<th scope="col"><?php echo esc_html__( 'WhatsApp number', 'whatsapp-chat-button' ); ?></th>
+							<th scope="col"><?php echo esc_html__( 'Action', 'whatsapp-chat-button' ); ?></th>
+						</tr>
+					</thead>
+					<tbody data-wacb-rules-body>
+						<?php foreach ( $specific_rules as $index => $rule ) : ?>
+							<?php
+							$this->render_routing_rule_row(
+								$settings_key . '[wacb_routing_rules][' . (string) $index . ']',
+								$rule,
+								$rule_type_options,
+								$page_options,
+								$post_options,
+								$category_options
+							);
+							?>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
 
 			<?php
 			ob_start();
@@ -791,6 +822,42 @@ class WACB_Admin {
 			'top_pages'           => WACB_Tracking_Engine::get_top_pages( 5 ),
 			'device_breakdown'    => $device_breakdown,
 			'tracked_devices'     => $tracked_devices,
+		);
+	}
+
+	/**
+	 * Returns plugin setup and health summary data for admin pages.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function get_plugin_summary() {
+		$settings             = WACB_Settings_Manager::get_settings();
+		$default_rule         = WACB_Settings_Manager::get_default_routing_rule();
+		$active_routing_rules = count( WACB_Settings_Manager::get_specific_routing_rules() );
+		$table_ready          = WACB_Tracking_Engine::table_exists();
+		$primary_number       = (string) $settings['wacb_whatsapp_number'];
+		$fallback_number      = (string) $default_rule['number'];
+		$button_position      = 'left' === $settings['wacb_button_position'] ? __( 'Left', 'whatsapp-chat-button' ) : __( 'Right', 'whatsapp-chat-button' );
+		$button_delay         = absint( $settings['wacb_button_delay'] );
+
+		return array(
+			'is_enabled'                => ! empty( $settings['wacb_enabled'] ),
+			'has_primary_number'        => '' !== $primary_number,
+			'has_default_fallback'      => '' !== $fallback_number,
+			'active_routing_rules'      => $active_routing_rules,
+			'is_tracking_ready'         => $table_ready,
+			'primary_number_label'      => '' !== $primary_number ? __( 'Configured', 'whatsapp-chat-button' ) : __( 'Missing', 'whatsapp-chat-button' ),
+			'default_fallback_label'    => '' !== $fallback_number ? __( 'Override configured', 'whatsapp-chat-button' ) : __( 'Uses primary number', 'whatsapp-chat-button' ),
+			'button_position_label'     => $button_position,
+			'button_delay_label'        => $button_delay > 0 ? sprintf(
+				/* translators: %d: delay in seconds. */
+				_n( '%d second delay', '%d seconds delay', $button_delay, 'whatsapp-chat-button' ),
+				$button_delay
+			) : __( 'Shows immediately', 'whatsapp-chat-button' ),
+			'enabled_badge_label'       => ! empty( $settings['wacb_enabled'] ) ? __( 'Enabled', 'whatsapp-chat-button' ) : __( 'Disabled', 'whatsapp-chat-button' ),
+			'tracking_badge_label'      => $table_ready ? __( 'Tracking ready', 'whatsapp-chat-button' ) : __( 'Tracking issue', 'whatsapp-chat-button' ),
+			'primary_number_value'      => $primary_number,
+			'default_fallback_value'    => $fallback_number,
 		);
 	}
 
