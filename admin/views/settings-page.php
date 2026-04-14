@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div class="wacb-notice-stack">
-		<?php settings_errors( WACB_Settings_Manager::get_option_name() ); ?>
+		<?php settings_errors(); ?>
 	</div>
 
 	<form class="wacb-admin-form" method="post" action="options.php">

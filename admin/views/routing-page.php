@@ -33,7 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div class="wacb-notice-stack">
-		<?php settings_errors( WACB_Settings_Manager::get_option_name() ); ?>
+		<?php settings_errors(); ?>
 	</div>
 
 	<div class="wacb-admin-stack">

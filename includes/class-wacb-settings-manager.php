@@ -450,7 +450,7 @@ class WACB_Settings_Manager {
 	}
 
 	/**
-	 * Merges the routing page submission while preserving the default fallback rule.
+	 * Merges the routing page submission and applies the submitted default fallback rule.
 	 *
 	 * @param array<int, array<string, int|string>> $existing_rules Current routing rules.
 	 * @param mixed                                 $submitted_rules Submitted routing rules.
@@ -459,6 +459,10 @@ class WACB_Settings_Manager {
 	private static function merge_routing_page_rules( $existing_rules, $submitted_rules ) {
 		$normalized_rules = array();
 		$default_rule     = self::get_default_routing_rule( $existing_rules );
+
+		if ( is_array( $submitted_rules ) ) {
+			$default_rule = self::get_default_routing_rule( $submitted_rules );
+		}
 
 		if ( is_array( $submitted_rules ) ) {
 			foreach ( $submitted_rules as $rule ) {
