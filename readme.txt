@@ -42,7 +42,7 @@ The plugin is built to stay review-safe and WordPress.org friendly:
 
 1. Upload the plugin files to the `/wp-content/plugins/whatsapp-chat-button` directory.
 2. Activate the plugin through the `Plugins` screen in WordPress.
-3. Go to `Settings > WhatsApp Chat Button`.
+3. Open `WhatsApp Chat Button` from the WordPress admin menu.
 4. Enter your primary WhatsApp number in international format, for example `15551234567`.
 5. Configure the default message, button design, and optional routing rules.
 6. Save settings and visit the frontend to confirm the floating button appears.
@@ -80,7 +80,7 @@ The plugin stores only the current page URL, the click timestamp, and a simple `
 
 = Does the plugin load assets everywhere? =
 
-No. Frontend assets load only when the button can actually render, and admin assets load only on the plugin settings screen.
+No. Frontend assets load only when the button can actually render. Admin styles load only on the plugin's own pages, and the routing page script loads only on the routing rules screen.
 
 == Changelog ==
 

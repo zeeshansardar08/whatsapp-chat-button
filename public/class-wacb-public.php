@@ -145,6 +145,25 @@ class WACB_Public {
 			);
 		}
 
+		if ( ! WACB_Tracking_Engine::table_exists() ) {
+			wp_send_json_success(
+				array(
+					'tracked' => false,
+					'message' => __( 'Tracking is not available yet.', 'whatsapp-chat-button' ),
+				),
+				202
+			);
+		}
+
+		if ( ! WACB_Tracking_Engine::is_valid_page_url( $page_url ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Invalid tracking URL.', 'whatsapp-chat-button' ),
+				),
+				400
+			);
+		}
+
 		$inserted = WACB_Tracking_Engine::insert_click( $page_url, WACB_Tracking_Engine::detect_device() );
 
 		if ( ! $inserted ) {
@@ -156,7 +175,11 @@ class WACB_Public {
 			);
 		}
 
-		wp_send_json_success();
+		wp_send_json_success(
+			array(
+				'tracked' => true,
+			)
+		);
 	}
 
 	/**

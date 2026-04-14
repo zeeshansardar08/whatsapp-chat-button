@@ -67,16 +67,17 @@ if ( ! function_exists( 'wacb_activate' ) ) {
 	/**
 	 * Runs plugin activation logic.
 	 *
+	 * @param bool $network_wide Whether the plugin is being network-activated.
 	 * @return void
 	 */
-	function wacb_activate() {
+	function wacb_activate( $network_wide = false ) {
 		wacb_define_constants();
 
 		if ( ! wacb_require_file( 'includes/class-wacb-activator.php' ) ) {
 			return;
 		}
 
-		WACB_Activator::activate();
+		WACB_Activator::activate( $network_wide );
 	}
 }
 

@@ -562,6 +562,16 @@
 	overflow-y: hidden;
 }
 
+.wacb-analytics-url {
+	word-break: break-word;
+	overflow-wrap: anywhere;
+}
+
+.wacb-analytics-url a {
+	word-break: inherit;
+	overflow-wrap: inherit;
+}
+
 .wacb-admin-page .widefat {
 	min-width: 100%;
 	border: 1px solid #e5e7eb;

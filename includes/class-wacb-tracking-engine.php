@@ -187,7 +187,7 @@ class WACB_Tracking_Engine {
 			array(
 				'page_url'   => $sanitized_page_url,
 				'clicked_at' => current_time( 'mysql' ),
-				'device'     => self::sanitize_device( $device ),
+				'device'     => self::sanitize_device_for_storage( $device ),
 			),
 			array( '%s', '%s', '%s' )
 		);
@@ -319,9 +319,9 @@ class WACB_Tracking_Engine {
 				continue;
 			}
 
-			$device = self::sanitize_device( $result['device'] );
+			$device = sanitize_key( (string) $result['device'] );
 
-			if ( isset( $breakdown[ $device ] ) ) {
+			if ( in_array( $device, self::ALLOWED_DEVICES, true ) && isset( $breakdown[ $device ] ) ) {
 				$breakdown[ $device ] = absint( $result['click_count'] );
 			}
 		}
@@ -336,6 +336,16 @@ class WACB_Tracking_Engine {
 	 */
 	public static function detect_device() {
 		return wp_is_mobile() ? 'mobile' : 'desktop';
+	}
+
+	/**
+	 * Returns whether a page URL can be stored by the tracking engine.
+	 *
+	 * @param mixed $page_url Raw page URL.
+	 * @return bool
+	 */
+	public static function is_valid_page_url( $page_url ) {
+		return '' !== self::sanitize_page_url( $page_url );
 	}
 
 	/**
@@ -387,16 +397,20 @@ class WACB_Tracking_Engine {
 			return '';
 		}
 
+		if ( self::get_normalized_url_port( $parsed_url ) !== self::get_normalized_url_port( $site_url ) ) {
+			return '';
+		}
+
 		return is_string( $page_url ) ? $page_url : '';
 	}
 
 	/**
-	 * Sanitizes the tracked device label.
+	 * Sanitizes the tracked device label before insert.
 	 *
 	 * @param mixed $device Raw device label.
 	 * @return string
 	 */
-	private static function sanitize_device( $device ) {
+	private static function sanitize_device_for_storage( $device ) {
 		$device = sanitize_key( (string) $device );
 
 		if ( ! in_array( $device, self::ALLOWED_DEVICES, true ) ) {
@@ -404,5 +418,25 @@ class WACB_Tracking_Engine {
 		}
 
 		return $device;
+	}
+
+	/**
+	 * Returns the effective URL port, including the scheme default when omitted.
+	 *
+	 * @param array<string, mixed> $parsed_url Parsed URL array.
+	 * @return int
+	 */
+	private static function get_normalized_url_port( $parsed_url ) {
+		if ( isset( $parsed_url['port'] ) ) {
+			return absint( $parsed_url['port'] );
+		}
+
+		$scheme = isset( $parsed_url['scheme'] ) ? strtolower( (string) $parsed_url['scheme'] ) : '';
+
+		if ( 'https' === $scheme ) {
+			return 443;
+		}
+
+		return 80;
 	}
 }

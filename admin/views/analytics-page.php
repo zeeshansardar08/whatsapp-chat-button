@@ -57,83 +57,83 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</section>
 
 			<section class="wacb-admin-card wacb-admin-metric-card">
-				<p class="wacb-admin-metric-card__label"><?php echo esc_html__( 'Tracked devices', 'whatsapp-chat-button' ); ?></p>
-				<p class="wacb-admin-metric-card__value"><?php echo esc_html( number_format_i18n( $analytics_summary['tracked_devices'] ) ); ?></p>
-				<p class="wacb-admin-metric-card__meta"><?php echo esc_html__( 'Mobile and desktop click categories with at least one recorded click.', 'whatsapp-chat-button' ); ?></p>
+				<p class="wacb-admin-metric-card__label"><?php echo esc_html__( 'Device types seen', 'whatsapp-chat-button' ); ?></p>
+				<p class="wacb-admin-metric-card__value"><?php echo esc_html( number_format_i18n( $analytics_summary['tracked_device_types'] ) ); ?></p>
+				<p class="wacb-admin-metric-card__meta"><?php echo esc_html__( 'Mobile and desktop categories with at least one recorded click.', 'whatsapp-chat-button' ); ?></p>
 			</section>
 		</div>
 
 		<div class="wacb-admin-grid wacb-admin-grid--two-column">
 			<section class="wacb-admin-card wacb-admin-card--compact">
-			<div class="wacb-admin-card__header">
-				<h2 class="wacb-admin-card__title"><?php echo esc_html__( 'Top Clicked Pages', 'whatsapp-chat-button' ); ?></h2>
-				<p class="wacb-admin-card__description-text"><?php echo esc_html__( 'The most-clicked frontend URLs recorded by the plugin.', 'whatsapp-chat-button' ); ?></p>
-			</div>
+				<div class="wacb-admin-card__header">
+					<h2 class="wacb-admin-card__title"><?php echo esc_html__( 'Top Clicked Pages', 'whatsapp-chat-button' ); ?></h2>
+					<p class="wacb-admin-card__description-text"><?php echo esc_html__( 'The most-clicked frontend URLs recorded by the plugin.', 'whatsapp-chat-button' ); ?></p>
+				</div>
 
-			<?php if ( ! empty( $analytics_summary['top_pages'] ) ) : ?>
+				<?php if ( ! empty( $analytics_summary['top_pages'] ) ) : ?>
+					<div class="wacb-table-card">
+						<table class="widefat striped">
+							<thead>
+								<tr>
+									<th scope="col"><?php echo esc_html__( 'Page URL', 'whatsapp-chat-button' ); ?></th>
+									<th scope="col"><?php echo esc_html__( 'Clicks', 'whatsapp-chat-button' ); ?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $analytics_summary['top_pages'] as $top_page ) : ?>
+									<tr>
+										<td class="wacb-table-cell-break wacb-analytics-url">
+											<a href="<?php echo esc_url( $top_page['page_url'] ); ?>" target="_blank" rel="noopener noreferrer">
+												<?php echo esc_html( $top_page['page_url'] ); ?>
+											</a>
+										</td>
+										<td><?php echo esc_html( number_format_i18n( $top_page['click_count'] ) ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				<?php else : ?>
+					<div class="wacb-empty-state">
+						<h3 class="wacb-empty-state__title"><?php echo esc_html__( 'No page-level click data yet', 'whatsapp-chat-button' ); ?></h3>
+						<p class="wacb-empty-state__text"><?php echo esc_html__( 'Top clicked pages will appear here after visitors use the frontend button.', 'whatsapp-chat-button' ); ?></p>
+					</div>
+				<?php endif; ?>
+			</section>
+
+			<section class="wacb-admin-card wacb-admin-card--compact">
+				<div class="wacb-admin-card__header">
+					<h2 class="wacb-admin-card__title"><?php echo esc_html__( 'Device Breakdown', 'whatsapp-chat-button' ); ?></h2>
+					<p class="wacb-admin-card__description-text"><?php echo esc_html__( 'Device detection uses WordPress core mobile detection and stores only a simple mobile or desktop label.', 'whatsapp-chat-button' ); ?></p>
+				</div>
+
 				<div class="wacb-table-card">
 					<table class="widefat striped">
 						<thead>
 							<tr>
-								<th scope="col"><?php echo esc_html__( 'Page URL', 'whatsapp-chat-button' ); ?></th>
+								<th scope="col"><?php echo esc_html__( 'Device', 'whatsapp-chat-button' ); ?></th>
 								<th scope="col"><?php echo esc_html__( 'Clicks', 'whatsapp-chat-button' ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
-							<?php foreach ( $analytics_summary['top_pages'] as $top_page ) : ?>
-								<tr>
-									<td class="wacb-table-cell-break">
-										<a href="<?php echo esc_url( $top_page['page_url'] ); ?>" target="_blank" rel="noopener noreferrer">
-											<?php echo esc_html( $top_page['page_url'] ); ?>
-										</a>
-									</td>
-									<td><?php echo esc_html( number_format_i18n( $top_page['click_count'] ) ); ?></td>
-								</tr>
-							<?php endforeach; ?>
+							<tr>
+								<td><?php echo esc_html__( 'Mobile', 'whatsapp-chat-button' ); ?></td>
+								<td><?php echo esc_html( number_format_i18n( $analytics_summary['device_breakdown']['mobile'] ) ); ?></td>
+							</tr>
+							<tr>
+								<td><?php echo esc_html__( 'Desktop', 'whatsapp-chat-button' ); ?></td>
+								<td><?php echo esc_html( number_format_i18n( $analytics_summary['device_breakdown']['desktop'] ) ); ?></td>
+							</tr>
 						</tbody>
 					</table>
 				</div>
-			<?php else : ?>
-				<div class="wacb-empty-state">
-					<h3 class="wacb-empty-state__title"><?php echo esc_html__( 'No page-level click data yet', 'whatsapp-chat-button' ); ?></h3>
-					<p class="wacb-empty-state__text"><?php echo esc_html__( 'Top clicked pages will appear here after visitors use the frontend button.', 'whatsapp-chat-button' ); ?></p>
-				</div>
-			<?php endif; ?>
-			</section>
-
-			<section class="wacb-admin-card wacb-admin-card--compact">
-			<div class="wacb-admin-card__header">
-				<h2 class="wacb-admin-card__title"><?php echo esc_html__( 'Device Breakdown', 'whatsapp-chat-button' ); ?></h2>
-				<p class="wacb-admin-card__description-text"><?php echo esc_html__( 'Device detection uses WordPress core mobile detection and stores only a simple mobile or desktop label.', 'whatsapp-chat-button' ); ?></p>
-			</div>
-
-			<div class="wacb-table-card">
-				<table class="widefat striped">
-					<thead>
-						<tr>
-							<th scope="col"><?php echo esc_html__( 'Device', 'whatsapp-chat-button' ); ?></th>
-							<th scope="col"><?php echo esc_html__( 'Clicks', 'whatsapp-chat-button' ); ?></th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td><?php echo esc_html__( 'Mobile', 'whatsapp-chat-button' ); ?></td>
-							<td><?php echo esc_html( number_format_i18n( $analytics_summary['device_breakdown']['mobile'] ) ); ?></td>
-						</tr>
-						<tr>
-							<td><?php echo esc_html__( 'Desktop', 'whatsapp-chat-button' ); ?></td>
-							<td><?php echo esc_html( number_format_i18n( $analytics_summary['device_breakdown']['desktop'] ) ); ?></td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
 			</section>
 		</div>
 
 		<section class="wacb-admin-card wacb-admin-card--compact">
 			<div class="wacb-admin-card__header">
 				<h2 class="wacb-admin-card__title"><?php echo esc_html__( 'Tracking Table', 'whatsapp-chat-button' ); ?></h2>
-				<p class="wacb-admin-card__description-text"><?php echo esc_html__( "The analytics summary below reflects the plugin's local tracking table only.", 'whatsapp-chat-button' ); ?></p>
+				<p class="wacb-admin-card__description-text"><?php echo esc_html__( 'The analytics summary below reflects the plugin\'s local tracking table only.', 'whatsapp-chat-button' ); ?></p>
 			</div>
 
 			<div class="wacb-table-card">
