@@ -25,9 +25,13 @@ function wacb_uninstall_site_data() {
 	delete_option( 'wacb_db_version' );
 	delete_transient( 'wacb_admin_notices' );
 
-	$table_name = str_replace( '`', '``', WACB_Tracking_Engine::get_table_name( $wpdb ) );
+	$table_name = '';
 
-	if ( '' !== $table_name ) {
+	if ( $wpdb instanceof wpdb ) {
+		$table_name = str_replace( '`', '``', WACB_Tracking_Engine::get_table_name( $wpdb ) );
+	}
+
+	if ( '' !== $table_name && $wpdb instanceof wpdb ) {
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table identifiers cannot be passed through $wpdb->prepare().
 		$wpdb->query( "DROP TABLE IF EXISTS `{$table_name}`" );
 	}

@@ -803,7 +803,14 @@ class WACB_Admin {
 		$device_breakdown    = WACB_Tracking_Engine::get_device_breakdown();
 		$table_exists_label  = $table_exists ? __( 'Ready', 'whatsapp-chat-button' ) : __( 'Not available yet', 'whatsapp-chat-button' );
 		$empty_state_message = '';
-		$tracked_devices     = absint( $device_breakdown['mobile'] ) + absint( $device_breakdown['desktop'] );
+		$tracked_device_types = count(
+			array_filter(
+				$device_breakdown,
+				static function ( $click_count ) {
+					return absint( $click_count ) > 0;
+				}
+			)
+		);
 
 		if ( ! $table_exists ) {
 			$empty_state_message = __( 'The analytics table is not available. Reactivate the plugin if tracking does not start after activation.', 'whatsapp-chat-button' );
@@ -821,7 +828,7 @@ class WACB_Admin {
 			'clicks_today'        => WACB_Tracking_Engine::get_clicks_today(),
 			'top_pages'           => WACB_Tracking_Engine::get_top_pages( 5 ),
 			'device_breakdown'    => $device_breakdown,
-			'tracked_devices'     => $tracked_devices,
+			'tracked_device_types' => $tracked_device_types,
 		);
 	}
 

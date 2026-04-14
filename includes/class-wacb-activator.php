@@ -25,9 +25,35 @@ class WACB_Activator {
 	/**
 	 * Activates the plugin.
 	 *
+	 * @param bool $network_wide Whether the plugin is being network-activated.
 	 * @return void
 	 */
-	public static function activate() {
+	public static function activate( $network_wide = false ) {
+		if ( is_multisite() && $network_wide ) {
+			$site_ids = get_sites(
+				array(
+					'fields' => 'ids',
+				)
+			);
+
+			foreach ( $site_ids as $site_id ) {
+				switch_to_blog( (int) $site_id );
+				self::activate_site();
+				restore_current_blog();
+			}
+
+			return;
+		}
+
+		self::activate_site();
+	}
+
+	/**
+	 * Activates plugin data for the current site.
+	 *
+	 * @return void
+	 */
+	private static function activate_site() {
 		self::maybe_seed_settings();
 		self::maybe_create_clicks_table();
 
